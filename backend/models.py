@@ -82,6 +82,8 @@ class TenantCreate(BaseModel):
     security_deposit: Optional[float] = 0
     monthly_rent: Optional[float] = 0
     property_id: str
+    bed_id: Optional[str] = None
+    room_id: Optional[str] = None
 
 
 class TenantUpdate(BaseModel):
