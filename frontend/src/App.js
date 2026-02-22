@@ -11,10 +11,16 @@ import Dashboard from "./pages/Dashboard";
 import Properties from "./pages/Properties";
 import PropertyDetail from "./pages/PropertyDetail";
 import Tenants from "./pages/Tenants";
+import TenantDetail from "./pages/TenantDetail";
+import TenantDashboard from "./pages/TenantDashboard";
 import RentManagement from "./pages/RentManagement";
 import Complaints from "./pages/Complaints";
 import MessManagement from "./pages/MessManagement";
 import Reports from "./pages/Reports";
+import NoticeBoard from "./pages/NoticeBoard";
+import Housekeeping from "./pages/Housekeeping";
+import Settings from "./pages/Settings";
+import UserManagement from "./pages/UserManagement";
 import "./App.css";
 
 const LoadingScreen = () => (
@@ -42,7 +48,10 @@ const AuthGuard = ({ children }) => {
 const PublicGuard = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen />;
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) {
+    if (user.role === "tenant") return <Navigate to="/tenant" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
   return children;
 };
 
@@ -58,10 +67,16 @@ function AppRoutes() {
         <Route path="properties" element={<Properties />} />
         <Route path="properties/:id" element={<PropertyDetail />} />
         <Route path="tenants" element={<Tenants />} />
+        <Route path="tenants/:id" element={<TenantDetail />} />
+        <Route path="tenant" element={<TenantDashboard />} />
         <Route path="rent" element={<RentManagement />} />
         <Route path="complaints" element={<Complaints />} />
         <Route path="mess" element={<MessManagement />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="notices" element={<NoticeBoard />} />
+        <Route path="housekeeping" element={<Housekeeping />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="users" element={<UserManagement />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
