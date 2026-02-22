@@ -33,7 +33,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 resend.api_key = os.environ.get("RESEND_API_KEY", "")
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@pgsaathi.online")
 
 app = FastAPI(title="PGSaathi API", version="3.0.0")
 api_router = APIRouter(prefix="/api")
