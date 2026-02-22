@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import API from "../services/api";
-import { Plus, Users, Trash2, Pencil, Shield } from "lucide-react";
+import { Plus, Users, Pencil, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 
@@ -53,19 +53,14 @@ const UserManagement = () => {
     finally { setSaving(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this user?")) return;
+  const toggleActive = async (u) => {
+    const action = u.is_active ? "deactivate" : "activate";
+    if (!window.confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${u.name}? ${u.is_active ? "They will no longer be able to log in." : "They will be able to log in again."}`)) return;
     try {
-      await API.delete(`/users/${id}`);
-      toast.success("User deleted");
+      await API.put(`/users/${u.id}`, { is_active: !u.is_active });
+      toast.success(`User ${action}d`);
       fetchAll();
     } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
-  };
-
-  const toggleActive = async (u) => {
-    await API.put(`/users/${u.id}`, { is_active: !u.is_active });
-    toast.success(u.is_active ? "User deactivated" : "User activated");
-    fetchAll();
   };
 
   const openEdit = (u) => {
@@ -114,9 +109,8 @@ const UserManagement = () => {
                 </div>
               </div>
               <div className="flex gap-1">
-                <button onClick={() => openEdit(u)} className="p-1.5 hover:bg-amber-50 rounded text-stone-400 hover:text-amber-600"><Pencil size={14} /></button>
-                <button onClick={() => toggleActive(u)} className="p-1.5 hover:bg-stone-100 rounded text-stone-400 hover:text-stone-700"><Shield size={14} /></button>
-                {u.id !== user?.id && <button onClick={() => handleDelete(u.id)} className="p-1.5 hover:bg-red-50 rounded text-stone-400 hover:text-red-600"><Trash2 size={14} /></button>}
+                <button onClick={() => openEdit(u)} title="Edit user" className="p-1.5 hover:bg-amber-50 rounded text-stone-400 hover:text-amber-600"><Pencil size={14} /></button>
+                {u.id !== user?.id && <button onClick={() => toggleActive(u)} title={u.is_active ? "Deactivate user" : "Activate user"} className={`p-1.5 rounded ${u.is_active ? 'hover:bg-red-50 text-stone-400 hover:text-red-600' : 'hover:bg-lime-50 text-stone-400 hover:text-lime-600'}`}><Shield size={14} /></button>}
               </div>
             </div>
           ))}
@@ -150,7 +144,6 @@ const UserManagement = () => {
                 <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className={`${inp} appearance-none bg-white`}>
                   <option value="warden">Warden</option>
                   <option value="tenant">Tenant</option>
-                  <option value="owner">Owner</option>
                 </select>
               </div>
               <div>
@@ -192,7 +185,6 @@ const UserManagement = () => {
                 <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className={`${inp} appearance-none bg-white`}>
                   <option value="warden">Warden</option>
                   <option value="tenant">Tenant</option>
-                  <option value="owner">Owner</option>
                 </select>
               </div>
               <div className="col-span-2">

@@ -9,9 +9,32 @@ router = APIRouter()
 
 @router.get("")
 async def get_users(role: str = None, current_user=Depends(get_current_user)):
-    if current_user["role"] != "owner":
+    if current_user["role"] not in ("owner", "superadmin"):
         raise HTTPException(status_code=403, detail="Only owners can view users")
-    query = {}
+
+    # Superadmins can see everyone; owners only see users they created
+    # or users assigned to their properties
+    if current_user["role"] == "superadmin":
+        query = {}
+    else:
+        # Get all property IDs owned by this owner
+        owner_properties = await db.properties.find(
+            {"owner_id": current_user["id"]}, {"id": 1}
+        ).to_list(1000)
+        owner_property_ids = [p["id"] for p in owner_properties]
+
+        query = {
+            "$and": [
+                {"id": {"$ne": current_user["id"]}},  # exclude self
+                {
+                    "$or": [
+                        {"created_by": current_user["id"]},
+                        {"property_id": {"$in": owner_property_ids}},
+                    ]
+                },
+            ]
+        }
+
     if role:
         query["role"] = role
     users = await db.users.find(query, {"_id": 0, "password_hash": 0}).sort("created_at", -1).to_list(1000)
@@ -45,8 +68,26 @@ async def create_user(body: dict, current_user=Depends(get_current_user)):
 
 @router.put("/{user_id}")
 async def update_user(user_id: str, body: dict, current_user=Depends(get_current_user)):
-    if current_user["role"] != "owner":
+    if current_user["role"] not in ("owner", "superadmin"):
         raise HTTPException(status_code=403, detail="Only owners can update users")
+
+    # Verify the target user belongs to this owner (unless superadmin)
+    target_user = await db.users.find_one({"id": user_id})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if current_user["role"] == "owner":
+        owner_properties = await db.properties.find(
+            {"owner_id": current_user["id"]}, {"id": 1}
+        ).to_list(1000)
+        owner_property_ids = [p["id"] for p in owner_properties]
+        is_own_user = (
+            target_user.get("created_by") == current_user["id"]
+            or target_user.get("property_id") in owner_property_ids
+        )
+        if not is_own_user:
+            raise HTTPException(status_code=403, detail="You can only manage users under your properties")
+
     update_data = {}
     for key in ["name", "role", "property_id", "phone", "is_active"]:
         if key in body:
@@ -58,14 +99,34 @@ async def update_user(user_id: str, body: dict, current_user=Depends(get_current
     return await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
 
 
-@router.delete("/{user_id}")
-async def delete_user(user_id: str, current_user=Depends(get_current_user)):
-    if current_user["role"] != "owner":
-        raise HTTPException(status_code=403, detail="Only owners can delete users")
+@router.put("/{user_id}/deactivate")
+async def deactivate_user(user_id: str, current_user=Depends(get_current_user)):
+    """Deactivate a user instead of deleting. Deletion is not allowed."""
+    if current_user["role"] not in ("owner", "superadmin"):
+        raise HTTPException(status_code=403, detail="Only owners can deactivate users")
     if user_id == current_user["id"]:
-        raise HTTPException(status_code=400, detail="Cannot delete yourself")
-    await db.users.delete_one({"id": user_id})
-    return {"message": "User deleted"}
+        raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
+
+    target_user = await db.users.find_one({"id": user_id})
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Verify ownership (unless superadmin)
+    if current_user["role"] == "owner":
+        owner_properties = await db.properties.find(
+            {"owner_id": current_user["id"]}, {"id": 1}
+        ).to_list(1000)
+        owner_property_ids = [p["id"] for p in owner_properties]
+        is_own_user = (
+            target_user.get("created_by") == current_user["id"]
+            or target_user.get("property_id") in owner_property_ids
+        )
+        if not is_own_user:
+            raise HTTPException(status_code=403, detail="You can only manage users under your properties")
+
+    new_status = not target_user.get("is_active", True)
+    await db.users.update_one({"id": user_id}, {"$set": {"is_active": new_status}})
+    return {"message": f"User {'activated' if new_status else 'deactivated'}", "is_active": new_status}
 
 
 @router.put("/me/password")
