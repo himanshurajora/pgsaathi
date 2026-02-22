@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="11" failures="4" skipped="0" tests="23" time="2.144" timestamp="2026-02-22T11:51:07.702054+00:00" hostname="agent-env-20deaf3f-7d10-4150-99a7-22e5b22c3263"><testcase classname="backend.tests.test_pgsaathi.TestAuth" name="test_register_duplicate_email" time="0.601"><failure message="assert 200 == 400&#10; +  where 200 = &lt;Response [200]&gt;.status_code">backend/tests/test_pgsaathi.py:48: in test_register_duplicate_email
+    assert resp.status_code == 400
+E   assert 200 == 400
+E    +  where 200 = &lt;Response [200]&gt;.status_code</failure></testcase><testcase classname="backend.tests.test_pgsaathi.TestAuth" name="test_login_invalid" time="0.272" /><testcase classname="backend.tests.test_pgsaathi.TestAuth" name="test_login_success" time="0.433" /><testcase classname="backend.tests.test_pgsaathi.TestAuth" name="test_get_me" time="0.364" /><testcase classname="backend.tests.test_pgsaathi.TestDashboard" name="test_dashboard_stats" time="0.048" /><testcase classname="backend.tests.test_pgsaathi.TestProperties" name="test_get_properties" time="0.051" /><testcase classname="backend.tests.test_pgsaathi.TestProperties" name="test_create_property" time="0.048"><error message="failed on setup with &quot;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_pgsaathi.py:94: in test_property
+    assert resp.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_pgsaathi.TestProperties" name="test_get_property" time="0.000"><error message="failed on setup with &quot;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_pgsaathi.py:94: in test_property
+    assert resp.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_pgsaathi.TestProperties" name="test_create_floor" time="0.000"><error message="failed on setup with &quot;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_pgsaathi.py:94: in test_property
+    assert resp.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_pgsaathi.TestProperties" name="test_create_room" time="0.000"><failure message="AttributeError: module 'pytest' has no attribute 'floor_id'">backend/tests/test_pgsaathi.py:124: in test_create_room
+    resp = auth_client.post(f"{BASE_URL}/api/floors/{pytest.floor_id}/rooms", json={
+                                                     ^^^^^^^^^^^^^^^
+E   AttributeError: module 'pytest' has no attribute 'floor_id'</failure></testcase><testcase classname="backend.tests.test_pgsaathi.TestProperties" name="test_create_bed" time="0.000"><failure message="AttributeError: module 'pytest' has no attribute 'room_id'">backend/tests/test_pgsaathi.py:135: in test_create_bed
+    resp = auth_client.post(f"{BASE_URL}/api/rooms/{pytest.room_id}/beds", json={
+                                                    ^^^^^^^^^^^^^^
+E   AttributeError: module 'pytest' has no attribute 'room_id'</failure></testcase><testcase classname="backend.tests.test_pgsaathi.TestTenants" name="test_get_tenants" time="0.054" /><testcase classname="backend.tests.test_pgsaathi.TestTenants" name="test_create_tenant" time="0.000"><error message="failed on setup with &quot;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_pgsaathi.py:94: in test_property
+    assert resp.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_pgsaathi.TestTenants" name="test_get_tenant" time="0.000"><error message="failed on setup with &quot;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_pgsaathi.py:94: in test_property
+    assert resp.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_pgsaathi.TestTenants" name="test_update_kyc" time="0.000"><error message="failed on setup with &quot;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_pgsaathi.py:94: in test_property
+    assert resp.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_pgsaathi.TestComplaints" name="test_create_complaint" time="0.000"><error message="failed on setup with &quot;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_pgsaathi.py:94: in test_property
+    assert resp.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_pgsaathi.TestComplaints" name="test_get_complaints" time="0.049" /><testcase classname="backend.tests.test_pgsaathi.TestComplaints" name="test_update_complaint_status" time="0.000"><failure message="AttributeError: module 'pytest' has no attribute 'complaint_id'">backend/tests/test_pgsaathi.py:200: in test_update_complaint_status
+    resp = auth_client.put(f"{BASE_URL}/api/complaints/{pytest.complaint_id}", json={"status": "in_progress"})
+                                                        ^^^^^^^^^^^^^^^^^^^
+E   AttributeError: module 'pytest' has no attribute 'complaint_id'</failure></testcase><testcase classname="backend.tests.test_pgsaathi.TestMess" name="test_get_mess_config" time="0.000"><error message="failed on setup with &quot;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_pgsaathi.py:94: in test_property
+    assert resp.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_pgsaathi.TestMess" name="test_create_mess_config" time="0.000"><error message="failed on setup with &quot;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_pgsaathi.py:94: in test_property
+    assert resp.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_pgsaathi.TestRent" name="test_create_invoice" time="0.000"><error message="failed on setup with &quot;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_pgsaathi.py:94: in test_property
+    assert resp.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase><testcase classname="backend.tests.test_pgsaathi.TestRent" name="test_get_invoices" time="0.051" /><testcase classname="backend.tests.test_pgsaathi.TestRent" name="test_record_payment" time="0.000"><error message="failed on setup with &quot;assert 422 == 200&#10; +  where 422 = &lt;Response [422]&gt;.status_code&quot;">backend/tests/test_pgsaathi.py:94: in test_property
+    assert resp.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = &lt;Response [422]&gt;.status_code</error></testcase></testsuite></testsuites>
