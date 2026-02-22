@@ -293,9 +293,28 @@ async def bulk_generate_invoices(body: dict, current_user=Depends(get_current_us
                 {"tenant_id": tenant["id"], "is_active": True}, {"_id": 0}
             )
             if plan:
-                food_amount = mess_config.get("monthly_amount", 0)
+                if mess_config.get("tracking_mode") == "attendance":
+                    date_prefix = f"{billing_year}-{str(billing_month).zfill(2)}"
+                    att_count = await db.meal_attendance.count_documents(
+                        {"tenant_id": tenant["id"], "date": {"$regex": f"^{date_prefix}"}, "present": True}
+                    )
+                    total_meal_types = len(mess_config.get("meal_types", ["breakfast", "lunch", "dinner"]))
+                    per_meal_rate = round(mess_config.get("monthly_amount", 0) / (30 * total_meal_types), 2) if total_meal_types > 0 else 0
+                    food_amount = round(att_count * per_meal_rate, 2)
+                else:
+                    food_amount = mess_config.get("monthly_amount", 0)
+        visitor_fines = await db.visitors.find(
+            {"tenant_id": tenant["id"], "status": "fined", "fine_billed": {"$ne": True}},
+            {"_id": 0},
+        ).to_list(100)
+        other_charges = sum(v.get("fine_amount", 0) for v in visitor_fines)
+        other_desc = ""
+        if visitor_fines:
+            other_desc = f"Visitor fines ({len(visitor_fines)})"
+            for v in visitor_fines:
+                await db.visitors.update_one({"id": v["id"]}, {"$set": {"fine_billed": True}})
         rent = tenant.get("monthly_rent", 0)
-        total = rent + food_amount
+        total = rent + food_amount + other_charges
         invoice_num = f"INV-{billing_year}{str(billing_month).zfill(2)}-{str(uuid.uuid4())[:6].upper()}"
         invoice = {
             "id": str(uuid.uuid4()),
