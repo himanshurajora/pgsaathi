@@ -49,13 +49,57 @@ logger = logging.getLogger(__name__)
 
 @api_router.get("/")
 async def root():
-    return {"message": "PGSaathi API running", "version": "2.0.0"}
+    return {"message": "PGSaathi API running", "version": "3.0.0"}
+
+
+async def _send_otp_email(email: str, otp: str, name: str):
+    try:
+        html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div style="display: inline-block; background: #D97706; border-radius: 12px; padding: 10px 16px;">
+                    <span style="color: white; font-weight: bold; font-size: 20px;">PG</span>
+                </div>
+                <h2 style="margin: 12px 0 4px; color: #1C1917;">PGSaathi</h2>
+            </div>
+            <p style="color: #44403C; font-size: 15px;">Hi {name},</p>
+            <p style="color: #44403C; font-size: 15px;">Your verification code is:</p>
+            <div style="background: #FEF3C7; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #92400E;">{otp}</span>
+            </div>
+            <p style="color: #78716C; font-size: 13px;">This code expires in 5 minutes. Do not share it with anyone.</p>
+            <hr style="border: none; border-top: 1px solid #E7E5E4; margin: 24px 0;" />
+            <p style="color: #A8A29E; font-size: 11px; text-align: center;">PGSaathi - Hostel & PG Management</p>
+        </div>
+        """
+        params = {
+            "from": SENDER_EMAIL,
+            "to": [email],
+            "subject": f"PGSaathi - Your verification code: {otp}",
+            "html": html,
+        }
+        await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"OTP email sent to {email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send OTP email to {email}: {e}")
+        return False
 
 
 @api_router.post("/auth/register")
 async def register(user_data: UserCreate):
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
+        if existing.get("is_verified") is False:
+            otp = str(random.randint(100000, 999999))
+            await db.otp_codes.delete_many({"email": user_data.email})
+            await db.otp_codes.insert_one({
+                "email": user_data.email,
+                "otp": otp,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            })
+            await _send_otp_email(user_data.email, otp, existing.get("name", ""))
+            return {"message": "OTP resent. Please verify your email.", "requires_otp": True, "email": user_data.email}
         raise HTTPException(status_code=400, detail="Email already registered")
     user = {
         "id": str(uuid.uuid4()),
@@ -66,11 +110,59 @@ async def register(user_data: UserCreate):
         "property_id": user_data.property_id,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "is_active": True,
+        "is_verified": False,
     }
     await db.users.insert_one(user)
+    otp = str(random.randint(100000, 999999))
+    await db.otp_codes.insert_one({
+        "email": user_data.email,
+        "otp": otp,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    sent = await _send_otp_email(user_data.email, otp, user_data.name)
+    return {"message": "Account created. Please verify your email.", "requires_otp": True, "email": user_data.email, "email_sent": sent}
+
+
+@api_router.post("/auth/verify-otp")
+async def verify_otp(body: dict):
+    email = body.get("email")
+    otp = body.get("otp")
+    if not email or not otp:
+        raise HTTPException(status_code=400, detail="Email and OTP are required")
+    record = await db.otp_codes.find_one({"email": email, "otp": otp})
+    if not record:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+    created = datetime.fromisoformat(record["created_at"])
+    if (datetime.now(timezone.utc) - created).total_seconds() > 300:
+        await db.otp_codes.delete_many({"email": email})
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
+    await db.users.update_one({"email": email}, {"$set": {"is_verified": True}})
+    await db.otp_codes.delete_many({"email": email})
+    user = await db.users.find_one({"email": email})
     token = create_access_token({"sub": user["id"], "role": user["role"]})
     user_resp = {k: v for k, v in user.items() if k not in ("password_hash", "_id")}
-    return {"token": token, "user": user_resp}
+    return {"token": token, "user": user_resp, "message": "Email verified successfully"}
+
+
+@api_router.post("/auth/resend-otp")
+async def resend_otp(body: dict):
+    email = body.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found")
+    if user.get("is_verified"):
+        raise HTTPException(status_code=400, detail="Email already verified")
+    otp = str(random.randint(100000, 999999))
+    await db.otp_codes.delete_many({"email": email})
+    await db.otp_codes.insert_one({
+        "email": email,
+        "otp": otp,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    sent = await _send_otp_email(email, otp, user.get("name", ""))
+    return {"message": "OTP resent", "email_sent": sent}
 
 
 @api_router.post("/auth/login")
@@ -78,6 +170,16 @@ async def login(credentials: UserLogin):
     user = await db.users.find_one({"email": credentials.email})
     if not user or not pwd_context.verify(credentials.password, user.get("password_hash", "")):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    if user.get("is_verified") is False:
+        otp = str(random.randint(100000, 999999))
+        await db.otp_codes.delete_many({"email": credentials.email})
+        await db.otp_codes.insert_one({
+            "email": credentials.email,
+            "otp": otp,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+        await _send_otp_email(credentials.email, otp, user.get("name", ""))
+        return {"requires_otp": True, "email": credentials.email, "message": "Please verify your email first. OTP sent."}
     token = create_access_token({"sub": user["id"], "role": user["role"]})
     user_resp = {k: v for k, v in user.items() if k not in ("password_hash", "_id")}
     return {"token": token, "user": user_resp}
