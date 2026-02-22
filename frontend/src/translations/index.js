@@ -152,6 +152,7 @@ export const translations = {
     "common.inr": "₹",
     "common.month": "Month",
     "common.property": "Property",
+    "dash.quick_actions": "Quick Actions",
   },
   hi: {
     "app.name": "PG साथी",
