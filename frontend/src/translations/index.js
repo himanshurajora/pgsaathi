@@ -307,5 +307,6 @@ export const translations = {
     "common.inr": "₹",
     "common.month": "महीना",
     "common.property": "संपत्ति",
+    "dash.quick_actions": "त्वरित कार्य",
   },
 };
