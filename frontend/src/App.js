@@ -21,6 +21,7 @@ import NoticeBoard from "./pages/NoticeBoard";
 import Housekeeping from "./pages/Housekeeping";
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
+import Visitors from "./pages/Visitors";
 import "./App.css";
 
 const LoadingScreen = () => (
@@ -75,6 +76,7 @@ function AppRoutes() {
         <Route path="reports" element={<Reports />} />
         <Route path="notices" element={<NoticeBoard />} />
         <Route path="housekeeping" element={<Housekeeping />} />
+        <Route path="visitors" element={<Visitors />} />
         <Route path="settings" element={<Settings />} />
         <Route path="users" element={<UserManagement />} />
       </Route>
