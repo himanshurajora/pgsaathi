@@ -256,20 +256,20 @@ class TestMess:
             pytest.skip("No property")
         resp = auth_client.post(f"{BASE_URL}/api/mess/config", json={
             "property_id": prop_id,
-            "is_active": True,
-            "monthly_charge": 3000,
-            "breakfast_time": "8:00 AM",
-            "lunch_time": "1:00 PM",
-            "dinner_time": "8:00 PM"
+            "monthly_amount": 3000,
+            "meal_types": ["breakfast", "dinner"],
+            "veg_nonveg": "veg",
+            "tracking_mode": "monthly"
         })
-        assert resp.status_code in [200, 201]
+        assert resp.status_code in [200, 201], f"Mess config failed: {resp.text}"
+        state["mess_config_id"] = resp.json().get("id")
 
     def test_get_mess_config(self, auth_client):
         prop_id = state.get("property_id")
         if not prop_id:
             pytest.skip("No property")
-        resp = auth_client.get(f"{BASE_URL}/api/mess/config/{prop_id}")
-        assert resp.status_code in [200, 404]
+        resp = auth_client.get(f"{BASE_URL}/api/mess/config?property_id={prop_id}")
+        assert resp.status_code == 200
 
 
 # ===== RENT / INVOICES =====
