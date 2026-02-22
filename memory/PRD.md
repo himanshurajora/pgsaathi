@@ -1,205 +1,118 @@
 # PGSaathi - Hostel/PG Management Platform
-## PRD & Architecture Notes
+## PRD & Development Tracker
 
-**Last Updated:** February 2026
+### Original Problem Statement
+Build a responsive web application named "PGSaathi" for Hostel/PG Management - a comprehensive platform for property owners to manage accommodations, tenants, billing, and operations, replacing manual methods.
 
----
+### User Personas
+- **Property Owner (Super Admin)**: Manages multiple properties, full access to all features
+- **Warden/Manager**: Manages assigned property, limited admin capabilities
+- **Tenant**: Self-service portal to view dues, raise complaints, manage meal plans
 
-## Product Vision
-PGSaathi is an end-to-end digital solution for hostel and paying guest (PG) property owners to manage their accommodations efficiently. It replaces manual registers, spreadsheets, and ad-hoc messaging with a centralized, structured, and auditable platform.
+### Core Requirements
+- Multi-role authentication (Owner/Warden/Tenant)
+- Property hierarchy management (Properties > Floors > Rooms > Beds)
+- Tenant lifecycle management (Onboarding with KYC, Room Assignment, Check-in/out, Room Switching)
+- Financial management (Rent, Invoices, Payments, PDF generation, Bulk billing, Prorated rent)
+- Service management (Mess/Food, Complaints with SLA, Housekeeping/Maintenance)
+- Communication (Notices, Notifications)
+- Reporting and Analytics
+- Hindi/English localization
+- Warm and friendly theme (amber-based)
+- No AI features, No payment gateway
 
-## User Choices / Preferences
-- Default language: English (with Hindi toggle on every page)
-- Language selector shown on first app visit
-- No payment gateway (manual payment tracking only)
-- No AI features
-- Simple email + password authentication
-- Warm and friendly theming (amber/earthy tones)
-- Core modules prioritized first
+### Tech Stack
+- **Frontend**: React, Tailwind CSS, shadcn/ui, Sonner (toasts), Lucide React (icons)
+- **Backend**: FastAPI (Python), Motor (async MongoDB driver)
+- **Database**: MongoDB
+- **Auth**: JWT tokens
+- **PDF**: ReportLab
+- **File Storage**: Local server (/app/backend/uploads/kyc/)
 
----
-
-## Tech Stack
-- **Frontend:** React + Tailwind CSS + shadcn/ui + Recharts
-- **Backend:** FastAPI (Python)
-- **Database:** MongoDB (Motor async driver)
-- **Auth:** JWT tokens (python-jose + bcrypt)
-- **Fonts:** Manrope (headings) + Inter (body)
-
----
-
-## Architecture
-
-### Backend Files
+### Architecture
 ```
 /app/backend/
-├── server.py           # App setup, auth routes, dashboard stats
-├── database.py         # MongoDB connection
-├── models.py           # All Pydantic request/response models
-├── auth_utils.py       # JWT utilities, get_current_user dependency
-└── routes/
-    ├── properties.py   # Property, Floor, Room, Bed CRUD (4 routers)
-    ├── tenants.py      # Tenant CRUD + bed allocation + KYC
-    ├── rent.py         # Invoice + Payment CRUD (2 routers)
-    ├── complaints.py   # Complaint CRUD + status updates
-    └── mess.py         # Mess Config + Tenant Meal Plans
-```
+  server.py          - Main app, auth, dashboard, bulk invoice, prorate, PDF gen
+  auth_utils.py      - JWT auth, password hashing
+  database.py        - MongoDB connection
+  models.py          - Pydantic models
+  routes/
+    properties.py    - Property/Floor/Room/Bed CRUD
+    tenants.py       - Tenant CRUD + KYC upload + checkout + switch bed
+    rent.py          - Invoices + Payments
+    complaints.py    - Complaints CRUD
+    mess.py          - Mess config + meal plans
+    notifications.py - Notification system
+    notices.py       - Notice board
+    housekeeping.py  - Housekeeping/maintenance tasks
+    users.py         - User management + password change
+    tenant_portal.py - Tenant self-service endpoints
 
-### Frontend Files
-```
 /app/frontend/src/
-├── App.js              # Routing with LanguageGuard + AuthGuard
-├── context/
-│   ├── AuthContext.js  # User auth state, login/logout
-│   └── LanguageContext.js  # i18n language state with t() function
-├── translations/
-│   └── index.js        # English + Hindi translations
-├── services/
-│   └── api.js          # Axios client with JWT interceptor
-├── components/
-│   └── Layout.jsx      # Sidebar + TopNav + Mobile bottom nav
-└── pages/
-    ├── LanguageSelector.jsx
-    ├── Login.jsx
-    ├── Register.jsx
-    ├── Dashboard.jsx       # Bento grid stats + recent tenants
-    ├── Properties.jsx      # Property list with stats cards
-    ├── PropertyDetail.jsx  # Floor/Room/Bed hierarchical view
-    ├── Tenants.jsx         # Tenant management + bed allocation
-    ├── RentManagement.jsx  # Invoices + Payments (tabbed)
-    ├── Complaints.jsx      # Complaint tracking with status filters
-    ├── MessManagement.jsx  # Mess config + meal plans
-    └── Reports.jsx         # Charts + analytics (recharts)
+  App.js             - Routes + guards (role-based)
+  components/
+    Layout.jsx       - Sidebar + header (role-based nav)
+  pages/
+    Dashboard.jsx    - Admin overview stats
+    Properties.jsx   - Property management
+    PropertyDetail.jsx - Property detail + floors/rooms/beds
+    Tenants.jsx      - Tenant list + onboarding with room assignment
+    TenantDetail.jsx - Admin view of individual tenant
+    TenantDashboard.jsx - Tenant self-service portal
+    RentManagement.jsx - Invoices + payments + bulk generation
+    Complaints.jsx   - Complaint tracking with SLA
+    MessManagement.jsx - Food/mess configuration
+    Reports.jsx      - Analytics and reports
+    NoticeBoard.jsx  - Notice board
+    Housekeeping.jsx - Housekeeping/maintenance tasks
+    Settings.jsx     - Profile, password change, language
+    UserManagement.jsx - Admin user management
 ```
 
----
+### What's Been Implemented (Feb 2026)
 
-## Database Schema (MongoDB)
+#### Phase 1 - Core MVP (Complete)
+- [x] JWT Authentication (register, login, role-based access)
+- [x] Language selector (English/Hindi) with i18n
+- [x] Property management (CRUD for properties, floors, rooms, beds)
+- [x] Tenant management (CRUD with search/filter)
+- [x] Rent & billing (invoices, payment recording)
+- [x] Complaint system (CRUD with status workflow)
+- [x] Mess/food management (config + meal plans)
+- [x] Dashboard with stats and occupancy
+- [x] Reports and analytics
 
-### Collections
-- `users` - Auth users (owner/warden/tenant roles)
-- `properties` - PG properties with address, gender_type
-- `floors` - Floors within properties
-- `rooms` - Rooms within floors (single/double/triple/dormitory)
-- `beds` - Individual beds with price + status + tenant_id
-- `tenants` - Tenant records with KYC status + bed assignment
-- `invoices` - Monthly billing records with rent/food/other charges
-- `payments` - Payment transactions against invoices
-- `complaints` - Complaint tickets with category/priority/status
-- `mess_configs` - Mess configuration per property
-- `tenant_meal_plans` - Tenant-wise meal preferences
+#### Phase 2 - Extended Features (Complete)
+- [x] Tenant Self-Service Portal (dashboard, invoices, payments, complaints, notices)
+- [x] Admin Tenant Detail Page (view/manage individual tenant with all data)
+- [x] KYC Document Upload (file upload + camera capture)
+- [x] Room Assignment at Onboarding (with availability warning)
+- [x] Tenant Checkout workflow with settlement calculation
+- [x] Bed/Room Switching with audit trail
+- [x] Bulk Invoice Generation (per property, per month)
+- [x] Prorated Rent Calculation
+- [x] PDF Invoice Generation (professional, downloadable)
+- [x] Notice Board (CRUD, pin/unpin, priority levels)
+- [x] Housekeeping & Maintenance (task scheduling, recurrence, status tracking)
+- [x] In-app Notification System (with unread count, mark read)
+- [x] User Management (owner-only, CRUD for wardens/tenants)
+- [x] Settings Page (profile edit, password change, language switch)
+- [x] Password Reset (email-based)
+- [x] Role-based Navigation (owner sidebar vs tenant sidebar)
+- [x] SLA Tracking for Complaints (time-based, priority-dependent)
+- [x] Hindi/English translations for all core features
 
----
+### Testing Status
+- Backend: 100% (66/66 tests passed)
+- Frontend: 95% (all pages load, navigation works)
+- Test credentials: admin@test.com / admin123 (owner)
 
-## User Roles
-1. **Owner** - Full access, manages all properties and users
-2. **Warden** - Daily operations for assigned property
-3. **Tenant** - Self-service portal (view dues, raise complaints)
-
----
-
-## API Endpoints
-
-### Auth
-- `POST /api/auth/register` - Create account
-- `POST /api/auth/login` - Login with email+password
-- `GET /api/auth/me` - Get current user
-
-### Dashboard
-- `GET /api/dashboard/stats` - Aggregated stats for owner
-
-### Properties
-- `GET/POST /api/properties` - List/Create properties
-- `GET/PUT/DELETE /api/properties/:id`
-- `GET/POST /api/properties/:id/floors`
-- `PUT/DELETE /api/floors/:id`
-- `GET/POST /api/floors/:id/rooms`
-- `PUT/DELETE /api/rooms/:id`
-- `GET/POST /api/rooms/:id/beds`
-- `PUT/DELETE /api/beds/:id`
-
-### Tenants
-- `GET/POST /api/tenants`
-- `GET/PUT/DELETE /api/tenants/:id`
-- `POST /api/tenants/:id/allocate-bed`
-- `POST /api/tenants/:id/release-bed`
-- `PUT /api/tenants/:id/kyc`
-
-### Rent
-- `GET/POST /api/invoices`
-- `GET/PUT/DELETE /api/invoices/:id`
-- `GET/POST /api/payments`
-
-### Complaints
-- `GET/POST /api/complaints`
-- `GET/PUT/DELETE /api/complaints/:id`
-
-### Mess
-- `GET/POST /api/mess/config`
-- `PUT /api/mess/config/:id`
-- `GET/POST /api/mess/plans`
-- `PUT /api/mess/plans/:id`
-
----
-
-## What's Been Implemented (Phase 1 - Core MVP)
-✅ Language Selector (shown on first visit, saves to localStorage)
-✅ English/Hindi full bilingual support
-✅ Email + Password authentication with JWT
-✅ Role-based access (owner/warden/tenant)
-✅ Owner Dashboard with bento grid stats
-✅ Property Management (CRUD)
-✅ Floor/Room/Bed hierarchical management
-✅ Visual bed map (green=available, red=occupied, gray=maintenance)
-✅ Tenant Onboarding (add, KYC status, bed allocation)
-✅ Rent & Billing (create invoices, record payments, status tracking)
-✅ Complaints Management (raise, assign, resolve, close)
-✅ Mess Configuration (meal types, pricing, veg/non-veg)
-✅ Meal Plan Assignment per tenant
-✅ Reports & Analytics (bar chart revenue, pie charts, summary)
-✅ Mobile-responsive design with bottom nav
-✅ Language toggle in sidebar/header
-✅ Warm amber/earthy theme throughout
-
----
-
-## Prioritized Backlog
-
-### P0 - Critical (Next Phase)
-- [ ] Tenant Portal (separate view for tenant role)
-- [ ] Notification system (in-app + email reminders)
-- [ ] Bulk invoice generation (generate all invoices for a property at once)
-
-### P1 - Important
-- [ ] Document upload for KYC (ID proof, agreement)
-- [ ] PDF invoice generation and download
-- [ ] Check-out workflow with final settlement
-- [ ] Room switching with audit trail
-- [ ] Prorated rent calculation for mid-month joins
-
-### P2 - Enhancement
-- [ ] Housekeeping schedules and cleaning management
-- [ ] Broadcast announcements / notice board
-- [ ] Maintenance request management
+### Remaining Backlog (P2/P3)
+- [ ] Email notifications (requires email service integration)
+- [ ] Email OTP verification (deferred by user)
+- [ ] Attendance-based mess tracking
+- [ ] Multi-language PDF invoices
 - [ ] Move-out notice workflow
-- [ ] Attendance-based mess tracking (individual meal marking)
-- [ ] Multi-language invoice PDF (Hindi/English)
-- [ ] SLA tracking for complaints
-- [ ] Password reset flow via email
-- [ ] Admin-level user management
-
----
-
-## Test Credentials (from testing)
-- Email: TEST_owner2@pgsaathi.com
-- Password: Test@1234
-- Role: Owner
-
----
-
-## Non-Functional Notes
-- All backend routes prefixed with `/api`
-- JWT stored in localStorage as `pgsaathi_token`
-- Language stored in localStorage as `pgsaathi_language`
-- MongoDB uses UUID strings for IDs (not ObjectId) for simplicity
-- Hot reload enabled on both frontend and backend
+- [ ] Advanced reporting (monthly trend graphs, export to Excel)
+- [ ] Bulk SMS notifications
+- [ ] Tenant feedback/rating system
