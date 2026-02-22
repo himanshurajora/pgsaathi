@@ -294,6 +294,31 @@ const RentManagement = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Bulk Invoice Dialog */}
+      <Dialog open={showBulk} onOpenChange={setShowBulk}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle style={{ fontFamily: "Manrope, sans-serif" }}>Bulk Generate Invoices</DialogTitle></DialogHeader>
+          <form onSubmit={handleBulkGenerate} className="space-y-3">
+            <p className="text-xs text-stone-500">Generate invoices for all active tenants in a property for the current month ({MONTHS[now.getMonth()]} {now.getFullYear()}).</p>
+            <div>
+              <label className="block text-xs font-medium text-stone-600 mb-1">Property *</label>
+              <select required value={bulkForm.property_id} onChange={(e) => setBulkForm({ ...bulkForm, property_id: e.target.value })} className={`${inp} appearance-none bg-white`}>
+                <option value="">-- Select property --</option>
+                {properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
+              <input type="checkbox" checked={bulkForm.include_food} onChange={(e) => setBulkForm({ ...bulkForm, include_food: e.target.checked })} className="w-4 h-4 rounded border-stone-300 accent-amber-600" />
+              Include food/mess charges
+            </label>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShowBulk(false)} className="flex-1 h-10 border border-stone-200 text-stone-600 rounded-lg text-sm">{t("common.cancel")}</button>
+              <button type="submit" disabled={bulking || !bulkForm.property_id} className="flex-1 h-10 bg-stone-800 text-white rounded-lg text-sm font-semibold hover:bg-stone-900 disabled:opacity-60">{bulking ? "Generating..." : "Generate All"}</button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
