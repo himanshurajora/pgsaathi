@@ -25,6 +25,8 @@ from routes.users import router as users_router
 from routes.tenant_portal import router as tenant_portal_router
 from routes.visitors import router as visitors_router
 from routes.feedback import router as feedback_router
+from routes.support import router as support_router
+from routes.admin import router as admin_router
 import resend
 
 ROOT_DIR = Path(__file__).parent
@@ -187,6 +189,8 @@ async def login(credentials: UserLogin):
     user = await db.users.find_one({"email": credentials.email})
     if not user or not pwd_context.verify(credentials.password, user.get("password_hash", "")):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    if user.get("is_active") is False:
+        raise HTTPException(status_code=403, detail="Your account has been suspended. Contact support at contact@pgsaathi.online")
     if user.get("is_verified") is False:
         otp, sent = await _create_and_send_otp(credentials.email, user.get("name", ""), "verification")
         return {"requires_otp": True, "email": credentials.email, "message": "Please verify your email first. OTP sent.", "email_sent": sent}
@@ -503,6 +507,8 @@ api_router.include_router(users_router, prefix="/users", tags=["users"])
 api_router.include_router(tenant_portal_router, prefix="/tenant-portal", tags=["tenant-portal"])
 api_router.include_router(visitors_router, prefix="/visitors", tags=["visitors"])
 api_router.include_router(feedback_router, prefix="/feedback", tags=["feedback"])
+api_router.include_router(support_router, prefix="/support", tags=["support"])
+api_router.include_router(admin_router, prefix="/admin", tags=["admin"])
 
 app.include_router(api_router)
 

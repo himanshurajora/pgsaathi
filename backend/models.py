@@ -6,7 +6,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     name: str
-    role: Literal["owner", "warden", "tenant"] = "owner"
+    role: Literal["owner", "warden", "tenant", "superadmin"] = "owner"
     property_id: Optional[str] = None
 
 

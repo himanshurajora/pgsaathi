@@ -23,6 +23,8 @@ import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
 import Visitors from "./pages/Visitors";
 import Feedback from "./pages/Feedback";
+import SupportAndFeedback from "./pages/SupportAndFeedback";
+import SuperAdmin from "./pages/SuperAdmin";
 import ForgotPassword from "./pages/ForgotPassword";
 import "./App.css";
 
@@ -53,6 +55,7 @@ const PublicGuard = ({ children }) => {
   if (loading) return <LoadingScreen />;
   if (user) {
     if (user.role === "tenant") return <Navigate to="/tenant" replace />;
+    if (user.role === "superadmin") return <Navigate to="/super-admin" replace />;
     return <Navigate to="/dashboard" replace />;
   }
   return children;
@@ -81,6 +84,8 @@ function AppRoutes() {
         <Route path="housekeeping" element={<Housekeeping />} />
         <Route path="visitors" element={<Visitors />} />
         <Route path="feedback" element={<Feedback />} />
+        <Route path="support" element={<SupportAndFeedback />} />
+        <Route path="super-admin" element={<SuperAdmin />} />
         <Route path="settings" element={<Settings />} />
         <Route path="users" element={<UserManagement />} />
       </Route>

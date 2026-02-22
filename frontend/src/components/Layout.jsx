@@ -5,7 +5,7 @@ import { useLanguage } from "../context/LanguageContext";
 import {
   LayoutDashboard, Building2, Users, CreditCard,
   MessageSquare, Utensils, BarChart2, LogOut, Bell, Menu, X,
-  Megaphone, Paintbrush, Settings, Shield, UserPlus, Star,
+  Megaphone, Paintbrush, Settings, Shield, UserPlus, Star, HeadphonesIcon, ShieldCheck,
 } from "lucide-react";
 import API from "../services/api";
 import { useEffect } from "react";
@@ -46,6 +46,7 @@ const Layout = () => {
   };
 
   const isTenant = user?.role === "tenant";
+  const isSuperAdmin = user?.role === "superadmin";
 
   const ownerNav = [
     { path: "/dashboard", icon: LayoutDashboard, label: t("nav.dashboard") },
@@ -60,6 +61,13 @@ const Layout = () => {
     { path: "/reports", icon: BarChart2, label: t("nav.reports") },
     { path: "/users", icon: Shield, label: "Users" },
     { path: "/feedback", icon: Star, label: t("feedback.title") || "Feedback" },
+    { path: "/support", icon: HeadphonesIcon, label: t("support.title") || "Support & Feedback" },
+    { path: "/settings", icon: Settings, label: "Settings" },
+  ];
+
+  const superAdminNav = [
+    { path: "/super-admin", icon: ShieldCheck, label: "Admin Dashboard" },
+    { path: "/support", icon: HeadphonesIcon, label: t("support.title") || "Support & Feedback" },
     { path: "/settings", icon: Settings, label: "Settings" },
   ];
 
@@ -68,10 +76,11 @@ const Layout = () => {
     { path: "/visitors", icon: UserPlus, label: "Visitors" },
     { path: "/notices", icon: Megaphone, label: "Notices" },
     { path: "/feedback", icon: Star, label: t("feedback.title") || "Feedback" },
+    { path: "/support", icon: HeadphonesIcon, label: t("support.title") || "Support & Feedback" },
     { path: "/settings", icon: Settings, label: "Settings" },
   ];
 
-  const navItems = isTenant ? tenantNav : ownerNav;
+  const navItems = isSuperAdmin ? superAdminNav : isTenant ? tenantNav : ownerNav;
   const mobileNavItems = navItems.slice(0, 5);
 
   const handleLogout = () => {
@@ -79,7 +88,7 @@ const Layout = () => {
     navigate("/login");
   };
 
-  const roleColors = { owner: "bg-amber-100 text-amber-700", warden: "bg-blue-100 text-blue-700", tenant: "bg-lime-100 text-lime-700" };
+  const roleColors = { owner: "bg-amber-100 text-amber-700", warden: "bg-blue-100 text-blue-700", tenant: "bg-lime-100 text-lime-700", superadmin: "bg-purple-100 text-purple-700" };
 
   return (
     <div className="min-h-screen bg-[#FDFBF7]">
