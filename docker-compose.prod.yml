@@ -11,8 +11,7 @@ services:
     restart: unless-stopped
     env_file:
       - ./backend/.env.prod
-    environment:
-      # Set MONGO_URL in backend/.env.prod for Atlas
+    # Set MONGO_URL in backend/.env.prod for Atlas
 
   # ── Frontend (React static build served by nginx) ───────
   frontend:
