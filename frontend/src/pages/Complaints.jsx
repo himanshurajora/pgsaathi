@@ -124,6 +124,21 @@ const Complaints = () => {
                       </div>
                       <p className="text-xs text-stone-500 mb-1">{c.description}</p>
                       <p className="text-xs text-stone-400">By {c.tenant_name} · {c.created_at?.slice(0, 10)} · <span className="capitalize">{c.category}</span></p>
+                      {c.resolution_notes && <p className="text-xs text-lime-700 mt-1 bg-lime-50 p-2 rounded">Resolution: {c.resolution_notes}</p>}
+                      {/* SLA Tracking */}
+                      {c.status !== "closed" && c.status !== "resolved" && c.created_at && (() => {
+                        const created = new Date(c.created_at);
+                        const now = new Date();
+                        const hours = Math.round((now - created) / (1000 * 60 * 60));
+                        const slaLimit = c.priority === "high" ? 24 : c.priority === "medium" ? 48 : 72;
+                        const breached = hours > slaLimit;
+                        return (
+                          <div className={`flex items-center gap-1.5 mt-1.5 text-[10px] font-semibold ${breached ? "text-red-600" : "text-stone-400"}`} data-testid={`sla-${c.id}`}>
+                            <span>{breached ? "SLA BREACHED" : "SLA OK"}</span>
+                            <span>({hours}h / {slaLimit}h limit)</span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
