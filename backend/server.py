@@ -6,6 +6,8 @@ import uuid
 import os
 import io
 import logging
+import random
+import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
 from database import db
@@ -21,11 +23,16 @@ from routes.notices import router as notices_router
 from routes.housekeeping import router as housekeeping_router
 from routes.users import router as users_router
 from routes.tenant_portal import router as tenant_portal_router
+from routes.visitors import router as visitors_router
+import resend
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-app = FastAPI(title="PGSaathi API", version="2.0.0")
+resend.api_key = os.environ.get("RESEND_API_KEY", "")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
+
+app = FastAPI(title="PGSaathi API", version="3.0.0")
 api_router = APIRouter(prefix="/api")
 
 app.add_middleware(
