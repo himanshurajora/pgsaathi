@@ -1,0 +1,154 @@
+{
+  "identity": {
+    "name": "PGSaathi",
+    "metaphor": "The Indian Courtyard (Aangan) - Warm, communal, organized",
+    "emotion": "Trust, Belonging, Efficiency",
+    "tone": "Friendly, Professional, Earthy",
+    "theme_preference": "light"
+  },
+  "typography": {
+    "font_family": {
+      "heading": "Manrope, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "display": "text-5xl md:text-7xl font-bold tracking-tight",
+      "h1": "text-4xl md:text-5xl font-bold tracking-tight",
+      "h2": "text-3xl md:text-4xl font-semibold tracking-tight",
+      "h3": "text-2xl font-semibold tracking-normal",
+      "body_lg": "text-lg leading-relaxed",
+      "body": "text-base leading-relaxed text-muted-foreground",
+      "caption": "text-sm text-muted-foreground tracking-wide uppercase"
+    },
+    "rules": "Headings must use Manrope. Body uses Inter. Never use Inter for Headings. Use tight tracking for headings (-0.02em)."
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "name": "Terracotta Saffron",
+        "hex": "#D97706",
+        "tailwind": "amber-600",
+        "usage": "Primary Buttons, Active States, Key Actions"
+      },
+      "secondary": {
+        "name": "Sage Green",
+        "hex": "#4D7C0F",
+        "tailwind": "lime-700",
+        "usage": "Success states, Financial positives, Safe status"
+      },
+      "background": {
+        "name": "Warm Sand",
+        "hex": "#FDFBF7",
+        "tailwind": "bg-[#FDFBF7]",
+        "usage": "Page Backgrounds (Alternative to pure white)"
+      },
+      "surface": {
+        "name": "Clean White",
+        "hex": "#FFFFFF",
+        "tailwind": "bg-white",
+        "usage": "Cards, Modals, Sidebar"
+      },
+      "text": {
+        "primary": "#1C1917",
+        "secondary": "#57534E",
+        "tailwind_primary": "text-stone-900",
+        "tailwind_secondary": "text-stone-600"
+      },
+      "accent": {
+        "name": "Turmeric",
+        "hex": "#F59E0B",
+        "tailwind": "amber-500",
+        "usage": "Notifications, Warnings, Highlights"
+      }
+    },
+    "gradients": "No linear gradients. Use subtle mesh or noise overlays if needed. Prefer flat, rich colors."
+  },
+  "layout_strategy": {
+    "dashboard": "Bento Grid (refer to MODE B in system rules). Mix of 1x1, 2x1, and 2x2 widgets.",
+    "marketing": "Asymmetric 'Tetris' Grid (MODE A). Large imagery, overlapping text.",
+    "mobile_nav": "Bottom Navigation Bar (Fixed) for Tenants/Wardens. Sidebar for Owners (Desktop).",
+    "spacing": "Generous. Use p-6 or p-8 for cards. Gap-6 for grids.",
+    "container": "max-w-7xl mx-auto px-4 md:px-8"
+  },
+  "components": {
+    "cards": {
+      "style": "Flat with 1px border (stone-200). Hover: Lift (-2px) + Shadow-md. Rounded-xl.",
+      "content_padding": "p-6"
+    },
+    "buttons": {
+      "primary": "bg-amber-600 hover:bg-amber-700 text-white rounded-lg px-6 py-3 font-semibold shadow-sm hover:shadow-md transition-all",
+      "secondary": "bg-stone-100 hover:bg-stone-200 text-stone-900 rounded-lg px-6 py-3 font-medium",
+      "outline": "border-2 border-stone-200 hover:border-amber-600 hover:text-amber-600 text-stone-600 rounded-lg px-6 py-3 font-medium bg-transparent"
+    },
+    "inputs": {
+      "style": "bg-white border border-stone-200 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 rounded-lg h-12 px-4 shadow-sm"
+    },
+    "badges": {
+      "style": "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider",
+      "success": "bg-lime-100 text-lime-800",
+      "warning": "bg-amber-100 text-amber-800",
+      "error": "bg-red-100 text-red-800",
+      "neutral": "bg-stone-100 text-stone-600"
+    }
+  },
+  "visual_assets": {
+    "icons": {
+      "library": "lucide-react",
+      "style": "Stroke width 1.5px (Light/Elegant). Color: stone-600 default, amber-600 active."
+    },
+    "images": [
+      {
+        "category": "hero",
+        "url": "https://images.pexels.com/photos/7616700/pexels-photo-7616700.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Diverse Indian students studying outdoors - Use for Landing Page Hero",
+        "alt": "Students studying together"
+      },
+      {
+        "category": "students_group",
+        "url": "https://images.pexels.com/photos/13804921/pexels-photo-13804921.png?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Group of students in uniforms - Use for Tenant Portal Welcome",
+        "alt": "Student group photo"
+      },
+      {
+        "category": "room_interior",
+        "url": "https://images.pexels.com/photos/5137982/pexels-photo-5137982.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Cozy hostel room with numbered door - Use for Property Management Empty State",
+        "alt": "Hostel room interior"
+      },
+      {
+        "category": "dorm_beds",
+        "url": "https://images.pexels.com/photos/5137980/pexels-photo-5137980.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Bunk beds in dorm - Use for Bed Management Section",
+        "alt": "Dormitory beds"
+      }
+    ],
+    "illustration_style": "Use 'Notion-style' minimal black and white illustrations or 3D avatars if available. Avoid generic vector art."
+  },
+  "motion": {
+    "transitions": "transition-all duration-200 ease-out",
+    "hover": "hover:-translate-y-1 hover:shadow-lg",
+    "loading": "Use a spinning 'Chakra' or simple circular loader in Amber-600."
+  },
+  "accessibility": {
+    "contrast": "Ensure text-stone-600+ on stone-100 backgrounds. Amber-600 is safe on white.",
+    "focus": "ring-2 ring-amber-600 ring-offset-2",
+    "touch_targets": "Minimum 44px height for all mobile buttons."
+  },
+  "universal_guidelines": [
+    "Do NOT use gradients for backgrounds. Use solid Warm Sand (#FDFBF7) or Clean White.",
+    "Do NOT center-align text in dashboards. Left align for readability.",
+    "Use 'Sonner' for toast notifications (Rich, descriptive toasts).",
+    "Forms: Use Labels above inputs. Use placeholder text sparsely.",
+    "Language Toggle: Must be prominent in the Navbar/Sidebar.",
+    "Mobile Responsive: All tables must turn into 'Cards' on mobile view."
+  ],
+  "instructions_to_main_agent": [
+    "Implement the 'Language Selection' screen as the very first interaction.",
+    "Build the 'Owner Dashboard' with a Bento Grid layout showing: Occupancy Rate, Revenue (INR), Complaints, and Recent Tenants.",
+    "Property Management: Use a hierarchical tree or card view (Property -> Floor -> Room -> Bed).",
+    "Bed Status: Use visual indicators (Green Circle = Available, Red Circle = Occupied, Grey = Maintenance).",
+    "Rent Management: Simple ledger view. Green for Paid, Red for Overdue.",
+    "Use the provided image URLs for the Landing Page and Empty States."
+  ]
+}
