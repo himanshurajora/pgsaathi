@@ -228,7 +228,7 @@ class TestComplaints:
         resp = auth_client.post(f"{BASE_URL}/api/complaints", json={
             "property_id": prop_id,
             "tenant_id": t_id,
-            "category": "maintenance",
+            "category": "plumbing",
             "title": "TEST_Leaky faucet",
             "description": "Water leaking"
         })
