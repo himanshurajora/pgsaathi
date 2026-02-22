@@ -259,7 +259,7 @@ class TestMess:
             "monthly_amount": 3000,
             "meal_types": ["breakfast", "dinner"],
             "veg_nonveg": "veg",
-            "tracking_mode": "monthly"
+            "tracking_mode": "fixed"
         })
         assert resp.status_code in [200, 201], f"Mess config failed: {resp.text}"
         state["mess_config_id"] = resp.json().get("id")
