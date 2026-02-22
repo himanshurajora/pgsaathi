@@ -129,3 +129,13 @@ async def tenant_notices(current_user=Depends(get_current_user)):
     return await db.notices.find(
         {"property_id": tenant["property_id"]}, {"_id": 0}
     ).sort("created_at", -1).to_list(50)
+
+
+@router.get("/visitors")
+async def tenant_visitors(current_user=Depends(get_current_user)):
+    tenant = await db.tenants.find_one({"email": current_user["email"]}, {"_id": 0})
+    if not tenant:
+        return []
+    return await db.visitors.find(
+        {"tenant_id": tenant["id"]}, {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
