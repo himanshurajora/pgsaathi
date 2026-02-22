@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import API from "../services/api";
-import { Plus, Search, Users, Bed, CheckCircle, Eye, AlertTriangle } from "lucide-react";
+import { Plus, Search, Users, Bed, CheckCircle, Eye, AlertTriangle, Mail, ShieldCheck, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 
@@ -30,6 +30,13 @@ const Tenants = () => {
   const [allocateData, setAllocateData] = useState({ bed_id: "", room_id: "" });
   const [saving, setSaving] = useState(false);
   const [noRoomWarning, setNoRoomWarning] = useState(false);
+
+  // Email verification state
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   const fetchAll = async () => {
     try {
@@ -70,8 +77,49 @@ const Tenants = () => {
     fetchBedsForProperty(propId);
   };
 
+  const handleSendOtp = async () => {
+    if (!form.email || !form.name) {
+      toast.error("Please enter tenant name and email first");
+      return;
+    }
+    setSendingOtp(true);
+    try {
+      await API.post("/tenants/send-otp", { email: form.email, name: form.name });
+      setOtpSent(true);
+      toast.success("OTP sent to tenant's email");
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to send OTP");
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp) { toast.error("Please enter the OTP"); return; }
+    setVerifyingOtp(true);
+    try {
+      await API.post("/tenants/verify-otp", { email: form.email, otp });
+      setEmailVerified(true);
+      toast.success("Tenant email verified!");
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Invalid OTP");
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  const resetEmailVerification = () => {
+    setEmailVerified(false);
+    setOtpSent(false);
+    setOtp("");
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
+    if (!emailVerified) {
+      toast.error("Please verify tenant's email first");
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
@@ -80,11 +128,13 @@ const Tenants = () => {
         monthly_rent: +form.monthly_rent || 0,
         bed_id: form.bed_id || null,
         room_id: form.room_id || null,
+        email_verified: true,
       };
       await API.post("/tenants", payload);
-      toast.success("Tenant added!");
+      toast.success("Tenant added! Login credentials sent to their email.");
       setShowAdd(false);
       setForm({ name: "", email: "", phone: "", check_in_date: "", emergency_contact_name: "", emergency_contact_phone: "", security_deposit: "", monthly_rent: "", property_id: properties[0]?.id || "", bed_id: "", room_id: "" });
+      resetEmailVerification();
       fetchAll();
     } catch (err) { toast.error(err.response?.data?.detail || "Failed to add tenant"); }
     finally { setSaving(false); }
@@ -234,19 +284,53 @@ const Tenants = () => {
       )}
 
       {/* Add Tenant Dialog */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+      <Dialog open={showAdd} onOpenChange={(open) => { setShowAdd(open); if (!open) resetEmailVerification(); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle style={{ fontFamily: "Manrope, sans-serif" }}>{t("tenant.add")}</DialogTitle></DialogHeader>
           <form onSubmit={handleCreate} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-stone-600 mb-1">{t("tenant.name")} *</label>
-                <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inp} />
+                <input required value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); if (emailVerified) resetEmailVerification(); }} className={inp} />
               </div>
-              <div>
+              <div className="col-span-2">
                 <label className="block text-xs font-medium text-stone-600 mb-1">{t("tenant.email")} *</label>
-                <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inp} />
+                <div className="flex gap-2">
+                  <input type="email" required value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); if (emailVerified || otpSent) resetEmailVerification(); }} className={`${inp} flex-1`} disabled={emailVerified} />
+                  {!emailVerified && !otpSent && (
+                    <button type="button" onClick={handleSendOtp} disabled={sendingOtp || !form.email || !form.name} className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-all disabled:opacity-50 whitespace-nowrap">
+                      {sendingOtp ? <Loader2 size={13} className="animate-spin" /> : <Mail size={13} />}
+                      Send OTP
+                    </button>
+                  )}
+                  {emailVerified && (
+                    <div className="flex items-center gap-1.5 px-3 py-2 bg-lime-100 text-lime-700 rounded-lg text-xs font-semibold">
+                      <ShieldCheck size={13} /> Verified
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* OTP Input - shown after OTP is sent but before verification */}
+              {otpSent && !emailVerified && (
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-stone-600 mb-1">Enter OTP sent to tenant's email *</label>
+                  <div className="flex gap-2">
+                    <input type="text" maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} placeholder="Enter 6-digit OTP" className={`${inp} flex-1 tracking-widest text-center font-semibold`} />
+                    <button type="button" onClick={handleVerifyOtp} disabled={verifyingOtp || otp.length < 6} className="flex items-center gap-1.5 px-3 py-2 bg-lime-600 hover:bg-lime-700 text-white rounded-lg text-xs font-semibold transition-all disabled:opacity-50 whitespace-nowrap">
+                      {verifyingOtp ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
+                      Verify
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between mt-1.5">
+                    <p className="text-xs text-stone-400">Ask the tenant for the OTP sent to their email</p>
+                    <button type="button" onClick={handleSendOtp} disabled={sendingOtp} className="text-xs text-amber-600 hover:text-amber-700 font-medium">
+                      Resend OTP
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-medium text-stone-600 mb-1">{t("tenant.phone")} *</label>
                 <input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inp} placeholder="+91 98765..." />
@@ -297,8 +381,10 @@ const Tenants = () => {
               </div>
             </div>
             <div className="flex gap-2.5 pt-1">
-              <button type="button" onClick={() => setShowAdd(false)} className="flex-1 h-10 border border-stone-200 text-stone-600 rounded-lg text-sm">{t("common.cancel")}</button>
-              <button type="submit" disabled={saving} className="flex-1 h-10 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 disabled:opacity-60">{saving ? t("common.loading") : t("common.save")}</button>
+              <button type="button" onClick={() => { setShowAdd(false); resetEmailVerification(); }} className="flex-1 h-10 border border-stone-200 text-stone-600 rounded-lg text-sm">{t("common.cancel")}</button>
+              <button type="submit" disabled={saving || !emailVerified} className="flex-1 h-10 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 disabled:opacity-60">
+                {saving ? t("common.loading") : !emailVerified ? "Verify email first" : t("common.save")}
+              </button>
             </div>
           </form>
         </DialogContent>

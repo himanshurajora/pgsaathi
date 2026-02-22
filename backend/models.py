@@ -86,6 +86,7 @@ class TenantCreate(BaseModel):
     property_id: str
     bed_id: Optional[str] = None
     room_id: Optional[str] = None
+    email_verified: bool = False
 
 
 class TenantUpdate(BaseModel):

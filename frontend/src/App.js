@@ -61,6 +61,13 @@ const PublicGuard = ({ children }) => {
   return children;
 };
 
+const RoleRedirect = () => {
+  const { user } = useAuth();
+  if (user?.role === "tenant") return <Navigate to="/tenant" replace />;
+  if (user?.role === "superadmin") return <Navigate to="/super-admin" replace />;
+  return <Navigate to="/dashboard" replace />;
+};
+
 function AppRoutes() {
   return (
     <Routes>
@@ -69,7 +76,7 @@ function AppRoutes() {
       <Route path="/register" element={<LanguageGuard><PublicGuard><Register /></PublicGuard></LanguageGuard>} />
       <Route path="/forgot-password" element={<LanguageGuard><PublicGuard><ForgotPassword /></PublicGuard></LanguageGuard>} />
       <Route path="/" element={<LanguageGuard><AuthGuard><Layout /></AuthGuard></LanguageGuard>}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<RoleRedirect />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="properties" element={<Properties />} />
         <Route path="properties/:id" element={<PropertyDetail />} />

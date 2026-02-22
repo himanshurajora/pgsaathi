@@ -1,17 +1,188 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
 from database import db
-from auth_utils import get_current_user
+from auth_utils import get_current_user, pwd_context
 from models import TenantCreate, TenantUpdate, BedAllocation
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import uuid
 import os
 import shutil
+import random
+import string
+import asyncio
+import logging
 from pathlib import Path
+from dotenv import load_dotenv
+import resend
+
+logger = logging.getLogger(__name__)
+
+ROOT_DIR = Path(__file__).parent.parent
+load_dotenv(ROOT_DIR / '.env')
+
+resend.api_key = os.environ.get("RESEND_API_KEY", "")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "noreply@pgsaathi.online")
 
 router = APIRouter()
 UPLOAD_DIR = Path(__file__).parent.parent / "uploads" / "kyc"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+MAX_OTP_PER_DAY = 3
+
+
+# === Tenant Onboarding Helpers ===
+
+async def _check_otp_rate_limit(email: str):
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    count = await db.otp_codes.count_documents({"email": email, "created_at": {"$gte": today_start}})
+    if count >= MAX_OTP_PER_DAY:
+        raise HTTPException(status_code=429, detail=f"OTP limit reached. Maximum {MAX_OTP_PER_DAY} OTPs per day.")
+    return count
+
+
+async def _send_otp_email(email: str, otp: str, name: str):
+    try:
+        html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div style="display: inline-block; background: #D97706; border-radius: 12px; padding: 10px 16px;">
+                    <span style="color: white; font-weight: bold; font-size: 20px;">PG</span>
+                </div>
+                <h2 style="margin: 12px 0 4px; color: #1C1917;">PGSaathi</h2>
+            </div>
+            <p style="color: #44403C; font-size: 15px;">Hi {name},</p>
+            <p style="color: #44403C; font-size: 15px;">Your verification code is:</p>
+            <div style="background: #FEF3C7; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #92400E;">{otp}</span>
+            </div>
+            <p style="color: #78716C; font-size: 13px;">This code expires in 5 minutes. Do not share it with anyone.</p>
+            <hr style="border: none; border-top: 1px solid #E7E5E4; margin: 24px 0;" />
+            <p style="color: #A8A29E; font-size: 11px; text-align: center;">PGSaathi - Hostel & PG Management</p>
+        </div>
+        """
+        params = {"from": SENDER_EMAIL, "to": [email], "subject": f"PGSaathi - Your verification code: {otp}", "html": html}
+        await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"OTP email sent to {email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send OTP email to {email}: {e}")
+        return False
+
+
+async def _create_and_send_tenant_otp(email: str, name: str):
+    await _check_otp_rate_limit(email)
+    otp = str(random.randint(100000, 999999))
+    await db.otp_codes.insert_one({
+        "email": email, "otp": otp, "purpose": "tenant_verification",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    sent = await _send_otp_email(email, otp, name)
+    return otp, sent
+
+
+async def _create_tenant_account(tenant_data: dict, property_name: str):
+    """Create a user account for the tenant with a temporary password and send credentials via email."""
+    email = tenant_data["email"]
+    name = tenant_data["name"]
+    temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+    user = {
+        "id": str(uuid.uuid4()),
+        "email": email,
+        "name": name,
+        "password_hash": pwd_context.hash(temp_password),
+        "role": "tenant",
+        "property_id": tenant_data.get("property_id"),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "is_active": True,
+        "is_verified": True,
+        "must_change_password": True,
+    }
+    await db.users.insert_one(user)
+    await _send_tenant_welcome_email(email, name, temp_password, property_name)
+    return user["id"], temp_password
+
+
+async def _send_tenant_welcome_email(email: str, name: str, temp_password: str, property_name: str):
+    """Send welcome email to tenant with their login credentials."""
+    try:
+        html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div style="display: inline-block; background: #D97706; border-radius: 12px; padding: 10px 16px;">
+                    <span style="color: white; font-weight: bold; font-size: 20px;">PG</span>
+                </div>
+                <h2 style="margin: 12px 0 4px; color: #1C1917;">PGSaathi</h2>
+            </div>
+            <h2 style="color: #1C1917; margin-bottom: 8px;">Welcome, {name}! 🎉</h2>
+            <p style="color: #44403C; font-size: 15px;">
+                You are now an official tenant of <strong>{property_name}</strong>.
+            </p>
+            <p style="color: #44403C; font-size: 15px;">
+                Your account has been created on PGSaathi. Use the credentials below to log in:
+            </p>
+            <div style="background: #FEF3C7; border-radius: 12px; padding: 20px; margin: 20px 0;">
+                <p style="margin: 0 0 8px; color: #92400E; font-size: 14px;"><strong>Email:</strong> {email}</p>
+                <p style="margin: 0 0 8px; color: #92400E; font-size: 14px;"><strong>Temporary Password:</strong></p>
+                <div style="background: white; border: 2px dashed #D97706; border-radius: 8px; padding: 12px; text-align: center;">
+                    <span style="font-size: 20px; font-weight: bold; letter-spacing: 2px; color: #D97706;">{temp_password}</span>
+                </div>
+            </div>
+            <div style="background: #FEE2E2; border-radius: 8px; padding: 12px; margin: 16px 0;">
+                <p style="color: #991B1B; font-size: 13px; margin: 0;">
+                    ⚠️ Please change your password after your first login for security.
+                </p>
+            </div>
+            <p style="color: #44403C; font-size: 15px;">
+                Log in at: <a href="https://pgsaathi.online" style="color: #D97706; font-weight: bold;">pgsaathi.online</a>
+            </p>
+            <hr style="border: none; border-top: 1px solid #E7E5E4; margin: 24px 0;" />
+            <p style="color: #A8A29E; font-size: 11px; text-align: center;">PGSaathi - Hostel & PG Management</p>
+        </div>
+        """
+        params = {
+            "from": SENDER_EMAIL, "to": [email],
+            "subject": f"Welcome to {property_name} - Your PGSaathi Login Credentials", "html": html,
+        }
+        await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Welcome email sent to tenant {email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send welcome email to {email}: {e}")
+        return False
+
+
+# === Tenant Onboarding Endpoints ===
+
+@router.post("/send-otp")
+async def send_tenant_otp(body: dict, current_user=Depends(get_current_user)):
+    """Owner sends OTP to tenant's email before adding them."""
+    email = body.get("email")
+    name = body.get("name", "")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    existing_user = await db.users.find_one({"email": email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="This email is already registered. The tenant may already have an account.")
+    otp, sent = await _create_and_send_tenant_otp(email, name)
+    return {"message": "OTP sent to tenant's email", "email_sent": sent}
+
+
+@router.post("/verify-otp")
+async def verify_tenant_otp(body: dict, current_user=Depends(get_current_user)):
+    """Owner verifies the OTP that was sent to tenant's email."""
+    email = body.get("email")
+    otp = body.get("otp")
+    if not email or not otp:
+        raise HTTPException(status_code=400, detail="Email and OTP are required")
+    record = await db.otp_codes.find_one({"email": email, "otp": otp, "purpose": "tenant_verification"})
+    if not record:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+    created = datetime.fromisoformat(record["created_at"])
+    if (datetime.now(timezone.utc) - created).total_seconds() > 300:
+        await db.otp_codes.delete_many({"email": email, "purpose": "tenant_verification"})
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
+    await db.otp_codes.delete_many({"email": email, "purpose": "tenant_verification"})
+    return {"message": "Tenant email verified successfully", "verified": True}
 
 
 @router.get("")
@@ -31,6 +202,10 @@ async def get_tenants(property_id: str = None, current_user=Depends(get_current_
 
 @router.post("")
 async def create_tenant(data: TenantCreate, current_user=Depends(get_current_user)):
+    # Check if email was verified via OTP (look for verified status)
+    if not data.email_verified:
+        raise HTTPException(status_code=400, detail="Tenant email must be verified via OTP before adding")
+
     tenant = {
         "id": str(uuid.uuid4()),
         "property_id": data.property_id,
@@ -59,6 +234,16 @@ async def create_tenant(data: TenantCreate, current_user=Depends(get_current_use
             await db.beds.update_one({"id": data.bed_id}, {"$set": {"status": "occupied", "tenant_id": tenant["id"]}})
             if not tenant["monthly_rent"]:
                 tenant["monthly_rent"] = bed.get("price", 0)
+
+    # Create tenant user account with temporary password
+    property_info = await db.properties.find_one({"id": data.property_id}, {"_id": 0})
+    property_name = property_info.get("name", "your PG") if property_info else "your PG"
+    user_id, temp_password = await _create_tenant_account(
+        {"email": data.email, "name": data.name, "property_id": data.property_id},
+        property_name
+    )
+    tenant["user_id"] = user_id
+
     await db.tenants.insert_one(tenant)
     tenant.pop("_id", None)
     return tenant
