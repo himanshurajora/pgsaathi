@@ -1,0 +1,92 @@
+{
+  "summary": "Completed e2e testing of PGSaathi v3 new features: 1) Email OTP verification during registration, 2) Attendance-based mess billing, 3) Visitor management with fines. All 22 backend tests passed (100%). Frontend pages verified - registration OTP flow, login OTP handling, visitors page, allows_visitors toggle in property form all working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Register/Properties forms",
+        "issues": ["Console warning: hydration error due to <span> nested in <option> and <select> - cosmetic React warning, does not affect functionality"]
+      },
+      {
+        "screen": "All Dialogs",
+        "issues": ["Console warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent} - accessibility enhancement recommended"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_new_features.py",
+    "/app/test_reports/pytest/pytest_results_v3.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "OTP Flow (Email verification): Registration creates unverified user, OTP stored in MongoDB otp_codes collection, verify-otp validates and returns token, resend-otp works for unverified users only",
+    "Login OTP Flow: Unverified users receive OTP on login attempt and must verify before getting token",
+    "Meal Attendance: Admin can mark/overwrite attendance, tenant attendance marking blocked for duplicate meals, attendance summary correctly calculates per-meal rate",
+    "Visitor Management: Property allows_visitors flag controls visitor request ability, admin can approve/reject/fine visitors, tenant cannot perform admin actions",
+    "Bulk Invoice Integration: Visitor fines (status='fined', fine_billed=False) are included in bulk invoice generation with fine_billed flag updated",
+    "Notification System: Fine imposition triggers notification to tenant"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_new_features.py"
+  ],
+  "success_rate": {
+    "backend": "100% (22/22 tests passed)",
+    "frontend": "100% (all new feature pages load and function correctly)"
+  },
+  "test_credentials": {
+    "owner_email": "TEST_owner_v2@pgsaathi.com",
+    "owner_password": "Test@1234",
+    "role": "owner"
+  },
+  "seed_data_creation": "Tests create and cleanup: properties with allows_visitors flag, tenants, mess configs with attendance tracking mode, meal plans, attendance records, visitor requests with fines. All test data prefixed with TEST_",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "PGSaathi v3 features fully tested. OTP verification working (OTP stored in db.otp_codes collection). Meal attendance with per-meal billing working (tracking_mode='attendance'). Visitor management with fines integrated into bulk invoicing. Use TEST_owner_v2@pgsaathi.com/Test@1234 for owner access. To test OTP, read OTP from MongoDB otp_codes collection.",
+  "features_tested": {
+    "otp_auth": [
+      "Registration creates unverified user with requires_otp=true",
+      "OTP verification returns token on correct OTP",
+      "Resend OTP works for unverified users",
+      "Already verified user cannot resend OTP",
+      "Invalid OTP returns error",
+      "Login for unverified user returns requires_otp with OTP sent",
+      "Login for verified user returns token directly"
+    ],
+    "meal_attendance": [
+      "Admin can mark attendance for tenant",
+      "Admin can overwrite existing attendance",
+      "Get attendance list with filters",
+      "Attendance summary with per-meal rate calculation"
+    ],
+    "visitor_management": [
+      "Tenant can request visitor (property allows)",
+      "Property with allows_visitors=false blocks request",
+      "Admin can approve visitor",
+      "Admin can reject visitor",
+      "Admin can impose fine",
+      "Fine creates notification for tenant",
+      "Tenant cannot approve/reject/fine visitors",
+      "Tenant portal shows visitors list"
+    ],
+    "bulk_invoice": [
+      "Bulk invoice includes unbilled visitor fines",
+      "fine_billed flag updated after invoicing"
+    ],
+    "property": [
+      "Create property with allows_visitors=true",
+      "Create property with allows_visitors=false"
+    ]
+  },
+  "frontend_features_verified": [
+    "Register page shows OTP input fields after registration",
+    "Login page handles OTP flow for unverified users",
+    "Properties page has Add Property button with allows_visitors toggle",
+    "Visitors page shows with status filter buttons (All, Pending, Approved, Rejected, Fined)",
+    "Navigation menu includes Visitors link"
+  ]
+}
