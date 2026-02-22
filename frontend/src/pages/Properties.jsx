@@ -14,7 +14,7 @@ const GENDER_COLORS = {
 };
 
 const PropertyForm = ({ initial, onSave, onClose, t }) => {
-  const [form, setForm] = useState(initial || { name: "", address: "", city: "", state: "", gender_type: "boys", house_rules: "", contact_phone: "" });
+  const [form, setForm] = useState(initial || { name: "", address: "", city: "", state: "", gender_type: "boys", house_rules: "", contact_phone: "", allows_visitors: true });
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -65,6 +65,10 @@ const PropertyForm = ({ initial, onSave, onClose, t }) => {
         <label className="block text-xs font-medium text-stone-600 mb-1">{t("prop.rules")}</label>
         <textarea value={form.house_rules} onChange={(e) => setForm({ ...form, house_rules: e.target.value })} rows={2} className="w-full px-3.5 py-2.5 border border-stone-200 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 rounded-lg outline-none text-sm resize-none" placeholder="No smoking, guests allowed until 10pm..." />
       </div>
+      <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
+        <input type="checkbox" checked={form.allows_visitors !== false} onChange={(e) => setForm({ ...form, allows_visitors: e.target.checked })} className="w-4 h-4 rounded border-stone-300 accent-amber-600" />
+        Allow visitors (tenants can request visitor passes)
+      </label>
       <div className="flex gap-2.5 pt-1">
         <button type="button" onClick={onClose} className="flex-1 h-10 border border-stone-200 text-stone-600 rounded-lg text-sm hover:bg-stone-50">{t("common.cancel")}</button>
         <button type="submit" disabled={saving} className="flex-1 h-10 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-semibold disabled:opacity-60">
