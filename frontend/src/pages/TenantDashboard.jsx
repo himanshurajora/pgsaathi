@@ -178,6 +178,7 @@ const TenantDashboard = () => {
               <TabsTrigger value="invoices" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">Invoices</TabsTrigger>
               <TabsTrigger value="payments" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">Payments</TabsTrigger>
               <TabsTrigger value="complaints" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">Complaints</TabsTrigger>
+              <TabsTrigger value="visitors" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">Visitors</TabsTrigger>
               <TabsTrigger value="notices" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">Notices</TabsTrigger>
             </TabsList>
 
