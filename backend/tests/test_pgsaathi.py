@@ -303,8 +303,9 @@ class TestRent:
         resp = auth_client.post(f"{BASE_URL}/api/payments", json={
             "invoice_id": inv_id,
             "tenant_id": t_id,
+            "property_id": state.get("property_id"),
             "amount": 5000,
-            "payment_method": "cash",
+            "payment_mode": "cash",
             "payment_date": "2025-01-15"
         })
         assert resp.status_code == 200
