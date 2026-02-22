@@ -1,8 +1,10 @@
 from fastapi import FastAPI, APIRouter, Depends, HTTPException
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.cors import CORSMiddleware
 from datetime import datetime, timezone
 import uuid
 import os
+import io
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
@@ -14,11 +16,16 @@ from routes.tenants import router as tenants_router
 from routes.rent import invoices_router, payments_router
 from routes.complaints import router as complaints_router
 from routes.mess import router as mess_router
+from routes.notifications import router as notifications_router
+from routes.notices import router as notices_router
+from routes.housekeeping import router as housekeeping_router
+from routes.users import router as users_router
+from routes.tenant_portal import router as tenant_portal_router
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-app = FastAPI(title="PGSaathi API", version="1.0.0")
+app = FastAPI(title="PGSaathi API", version="2.0.0")
 api_router = APIRouter(prefix="/api")
 
 app.add_middleware(
@@ -35,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 @api_router.get("/")
 async def root():
-    return {"message": "PGSaathi API running", "version": "1.0.0"}
+    return {"message": "PGSaathi API running", "version": "2.0.0"}
 
 
 @api_router.post("/auth/register")
@@ -72,6 +79,17 @@ async def login(credentials: UserLogin):
 @api_router.get("/auth/me")
 async def get_me(current_user=Depends(get_current_user)):
     return current_user
+
+
+@api_router.put("/auth/me")
+async def update_me(body: dict, current_user=Depends(get_current_user)):
+    update_data = {}
+    for key in ["name", "phone", "language_preference"]:
+        if key in body:
+            update_data[key] = body[key]
+    if update_data:
+        await db.users.update_one({"id": current_user["id"]}, {"$set": update_data})
+    return await db.users.find_one({"id": current_user["id"]}, {"_id": 0, "password_hash": 0})
 
 
 @api_router.get("/dashboard/stats")
@@ -134,6 +152,177 @@ async def get_dashboard_stats(current_user=Depends(get_current_user)):
     }
 
 
+# === Bulk Invoice Generation ===
+@api_router.post("/invoices/bulk")
+async def bulk_generate_invoices(body: dict, current_user=Depends(get_current_user)):
+    property_id = body.get("property_id")
+    billing_month = body.get("billing_month", datetime.now(timezone.utc).month)
+    billing_year = body.get("billing_year", datetime.now(timezone.utc).year)
+    include_food = body.get("include_food", False)
+    tenants = await db.tenants.find(
+        {"property_id": property_id, "status": "active"}, {"_id": 0}
+    ).to_list(1000)
+    mess_config = None
+    if include_food:
+        mess_config = await db.mess_configs.find_one(
+            {"property_id": property_id, "is_active": True}, {"_id": 0}
+        )
+    created = []
+    skipped = []
+    for tenant in tenants:
+        existing = await db.invoices.find_one({
+            "tenant_id": tenant["id"],
+            "billing_month": billing_month,
+            "billing_year": billing_year,
+        })
+        if existing:
+            skipped.append(tenant["name"])
+            continue
+        food_amount = 0
+        if include_food and mess_config:
+            plan = await db.tenant_meal_plans.find_one(
+                {"tenant_id": tenant["id"], "is_active": True}, {"_id": 0}
+            )
+            if plan:
+                food_amount = mess_config.get("monthly_amount", 0)
+        rent = tenant.get("monthly_rent", 0)
+        total = rent + food_amount
+        invoice_num = f"INV-{billing_year}{str(billing_month).zfill(2)}-{str(uuid.uuid4())[:6].upper()}"
+        invoice = {
+            "id": str(uuid.uuid4()),
+            "invoice_number": invoice_num,
+            "tenant_id": tenant["id"],
+            "tenant_name": tenant.get("name", ""),
+            "property_id": property_id,
+            "billing_month": billing_month,
+            "billing_year": billing_year,
+            "rent_amount": rent,
+            "food_amount": food_amount,
+            "other_charges": 0,
+            "other_charges_desc": "",
+            "previous_balance": 0,
+            "total_amount": total,
+            "paid_amount": 0,
+            "due_amount": total,
+            "status": "pending",
+            "due_date": "",
+            "notes": "Auto-generated",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
+        await db.invoices.insert_one(invoice)
+        invoice.pop("_id", None)
+        created.append(invoice)
+    return {"created": len(created), "skipped": len(skipped), "skipped_names": skipped, "invoices": created}
+
+
+# === Prorated Rent Calculation ===
+@api_router.post("/invoices/prorate")
+async def calculate_prorated_rent(body: dict, current_user=Depends(get_current_user)):
+    monthly_rent = body.get("monthly_rent", 0)
+    join_date_str = body.get("join_date")
+    billing_month = body.get("billing_month", datetime.now(timezone.utc).month)
+    billing_year = body.get("billing_year", datetime.now(timezone.utc).year)
+    import calendar
+    days_in_month = calendar.monthrange(billing_year, billing_month)[1]
+    join_date = datetime.strptime(join_date_str, "%Y-%m-%d")
+    if join_date.month == billing_month and join_date.year == billing_year:
+        days_stayed = days_in_month - join_date.day + 1
+    else:
+        days_stayed = days_in_month
+    daily_rate = monthly_rent / days_in_month
+    prorated = round(daily_rate * days_stayed, 2)
+    return {
+        "monthly_rent": monthly_rent,
+        "days_in_month": days_in_month,
+        "days_stayed": days_stayed,
+        "daily_rate": round(daily_rate, 2),
+        "prorated_rent": prorated,
+    }
+
+
+# === PDF Invoice Generation ===
+@api_router.get("/invoices/{invoice_id}/pdf")
+async def generate_invoice_pdf(invoice_id: str, current_user=Depends(get_current_user)):
+    from fastapi.responses import StreamingResponse
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet
+
+    invoice = await db.invoices.find_one({"id": invoice_id}, {"_id": 0})
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    tenant = await db.tenants.find_one({"id": invoice.get("tenant_id")}, {"_id": 0})
+    prop = await db.properties.find_one({"id": invoice.get("property_id")}, {"_id": 0})
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=40, bottomMargin=40)
+    styles = getSampleStyleSheet()
+    elements = []
+    elements.append(Paragraph(f"<b>PGSaathi - Invoice</b>", styles["Title"]))
+    elements.append(Spacer(1, 10))
+    if prop:
+        elements.append(Paragraph(f"{prop.get('name', '')} - {prop.get('address', '')}, {prop.get('city', '')}", styles["Normal"]))
+    elements.append(Spacer(1, 15))
+    elements.append(Paragraph(f"<b>Invoice #:</b> {invoice.get('invoice_number', '')}", styles["Normal"]))
+    MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    month_name = MONTHS[invoice.get("billing_month", 1) - 1]
+    elements.append(Paragraph(f"<b>Period:</b> {month_name} {invoice.get('billing_year', '')}", styles["Normal"]))
+    elements.append(Paragraph(f"<b>Tenant:</b> {invoice.get('tenant_name', '')}", styles["Normal"]))
+    if tenant:
+        elements.append(Paragraph(f"<b>Phone:</b> {tenant.get('phone', '')}", styles["Normal"]))
+    elements.append(Spacer(1, 20))
+    data = [["Description", "Amount (INR)"]]
+    data.append(["Rent", f"{invoice.get('rent_amount', 0):,.2f}"])
+    if invoice.get("food_amount", 0) > 0:
+        data.append(["Food/Mess", f"{invoice.get('food_amount', 0):,.2f}"])
+    if invoice.get("other_charges", 0) > 0:
+        desc = invoice.get("other_charges_desc") or "Other"
+        data.append([desc, f"{invoice.get('other_charges', 0):,.2f}"])
+    if invoice.get("previous_balance", 0) > 0:
+        data.append(["Previous Balance", f"{invoice.get('previous_balance', 0):,.2f}"])
+    data.append(["Total", f"{invoice.get('total_amount', 0):,.2f}"])
+    data.append(["Paid", f"{invoice.get('paid_amount', 0):,.2f}"])
+    data.append(["Balance Due", f"{invoice.get('due_amount', 0):,.2f}"])
+    table = Table(data, colWidths=[350, 150])
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#D97706")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E7E5E4")),
+        ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#FEF3C7")),
+        ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+    ]))
+    elements.append(table)
+    elements.append(Spacer(1, 20))
+    status_text = invoice.get("status", "pending").upper()
+    elements.append(Paragraph(f"<b>Status:</b> {status_text}", styles["Normal"]))
+    if invoice.get("notes"):
+        elements.append(Paragraph(f"<b>Notes:</b> {invoice.get('notes')}", styles["Normal"]))
+    doc.build(elements)
+    buf.seek(0)
+    filename = f"Invoice_{invoice.get('invoice_number', 'N-A')}.pdf"
+    return StreamingResponse(buf, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
+
+
+# === Password Reset (self-service without email) ===
+@api_router.post("/auth/reset-password")
+async def reset_password(body: dict):
+    email = body.get("email")
+    new_password = body.get("new_password")
+    if not email or not new_password:
+        raise HTTPException(status_code=400, detail="Email and new_password are required")
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with this email")
+    new_hash = pwd_context.hash(new_password)
+    await db.users.update_one({"email": email}, {"$set": {"password_hash": new_hash}})
+    return {"message": "Password has been reset successfully"}
+
+
 # Include all routers
 api_router.include_router(properties_router, prefix="/properties", tags=["properties"])
 api_router.include_router(floors_router, prefix="/floors", tags=["floors"])
@@ -144,6 +333,11 @@ api_router.include_router(invoices_router, prefix="/invoices", tags=["invoices"]
 api_router.include_router(payments_router, prefix="/payments", tags=["payments"])
 api_router.include_router(complaints_router, prefix="/complaints", tags=["complaints"])
 api_router.include_router(mess_router, prefix="/mess", tags=["mess"])
+api_router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
+api_router.include_router(notices_router, prefix="/notices", tags=["notices"])
+api_router.include_router(housekeeping_router, prefix="/housekeeping", tags=["housekeeping"])
+api_router.include_router(users_router, prefix="/users", tags=["users"])
+api_router.include_router(tenant_portal_router, prefix="/tenant-portal", tags=["tenant-portal"])
 
 app.include_router(api_router)
 
