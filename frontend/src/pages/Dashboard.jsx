@@ -141,7 +141,7 @@ const Dashboard = () => {
 
           {/* Quick actions */}
           <div className="bg-white rounded-xl border border-stone-200 p-5">
-            <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Quick Actions</p>
+            <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">{t("dash.quick_actions")}</p>
             <div className="space-y-1">
               {[
                 { label: t("tenant.add"), link: "/tenants", dot: "bg-amber-500" },
