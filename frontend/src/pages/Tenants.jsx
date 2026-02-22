@@ -1,22 +1,14 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import API from "../services/api";
-import { Plus, Search, Users, Phone, Mail, Bed, CheckCircle, XCircle, Clock, ChevronDown } from "lucide-react";
+import { Plus, Search, Users, Bed, CheckCircle, Eye, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 
-const KYC_BADGES = {
-  pending: "bg-amber-100 text-amber-700",
-  verified: "bg-lime-100 text-lime-700",
-  rejected: "bg-red-100 text-red-700",
-};
-
-const STATUS_BADGES = {
-  active: "bg-lime-100 text-lime-700",
-  pending: "bg-amber-100 text-amber-700",
-  checked_out: "bg-stone-100 text-stone-600",
-};
+const KYC_BADGES = { pending: "bg-amber-100 text-amber-700", verified: "bg-lime-100 text-lime-700", rejected: "bg-red-100 text-red-700" };
+const STATUS_BADGES = { active: "bg-lime-100 text-lime-700", pending: "bg-amber-100 text-amber-700", checked_out: "bg-stone-100 text-stone-600" };
 
 const Tenants = () => {
   const { t } = useLanguage();
@@ -28,10 +20,16 @@ const Tenants = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
   const [showAllocate, setShowAllocate] = useState(null);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", check_in_date: "", emergency_contact_name: "", emergency_contact_phone: "", security_deposit: "", monthly_rent: "", property_id: "" });
+  const [form, setForm] = useState({
+    name: "", email: "", phone: "", check_in_date: "", emergency_contact_name: "",
+    emergency_contact_phone: "", security_deposit: "", monthly_rent: "", property_id: "",
+    bed_id: "", room_id: "",
+  });
   const [allBeds, setAllBeds] = useState([]);
+  const [onboardingBeds, setOnboardingBeds] = useState([]);
   const [allocateData, setAllocateData] = useState({ bed_id: "", room_id: "" });
   const [saving, setSaving] = useState(false);
+  const [noRoomWarning, setNoRoomWarning] = useState(false);
 
   const fetchAll = async () => {
     try {
@@ -40,30 +38,56 @@ const Tenants = () => {
       setProperties(propRes.data);
       if (form.property_id === "" && propRes.data.length > 0) {
         setForm((f) => ({ ...f, property_id: propRes.data[0].id }));
+        fetchBedsForProperty(propRes.data[0].id);
       }
-    } catch {
-      toast.error("Failed to load tenants");
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error("Failed to load tenants"); }
+    finally { setLoading(false); }
   };
 
   useEffect(() => { fetchAll(); }, []);
+
+  const fetchBedsForProperty = async (propertyId) => {
+    if (!propertyId) { setOnboardingBeds([]); return; }
+    try {
+      const res = await API.get(`/properties/${propertyId}/floors`);
+      const beds = [];
+      for (const floor of res.data) {
+        const roomsRes = await API.get(`/floors/${floor.id}/rooms`);
+        for (const room of roomsRes.data) {
+          const bedsRes = await API.get(`/rooms/${room.id}/beds`);
+          bedsRes.data.filter((b) => b.status === "available").forEach((b) =>
+            beds.push({ ...b, room_number: room.room_number, room_id: room.id })
+          );
+        }
+      }
+      setOnboardingBeds(beds);
+      setNoRoomWarning(beds.length === 0);
+    } catch { setOnboardingBeds([]); }
+  };
+
+  const handlePropertyChange = (propId) => {
+    setForm((f) => ({ ...f, property_id: propId, bed_id: "", room_id: "" }));
+    fetchBedsForProperty(propId);
+  };
 
   const handleCreate = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await API.post("/tenants", { ...form, security_deposit: +form.security_deposit || 0, monthly_rent: +form.monthly_rent || 0 });
+      const payload = {
+        ...form,
+        security_deposit: +form.security_deposit || 0,
+        monthly_rent: +form.monthly_rent || 0,
+        bed_id: form.bed_id || null,
+        room_id: form.room_id || null,
+      };
+      await API.post("/tenants", payload);
       toast.success("Tenant added!");
       setShowAdd(false);
-      setForm({ name: "", email: "", phone: "", check_in_date: "", emergency_contact_name: "", emergency_contact_phone: "", security_deposit: "", monthly_rent: "", property_id: properties[0]?.id || "" });
+      setForm({ name: "", email: "", phone: "", check_in_date: "", emergency_contact_name: "", emergency_contact_phone: "", security_deposit: "", monthly_rent: "", property_id: properties[0]?.id || "", bed_id: "", room_id: "" });
       fetchAll();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || "Failed to add tenant");
-    } finally {
-      setSaving(false);
-    }
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed to add tenant"); }
+    finally { setSaving(false); }
   };
 
   const handleKYC = async (id, status) => {
@@ -85,9 +109,7 @@ const Tenants = () => {
         }
       }
       setAllBeds(beds);
-    } catch {
-      toast.error("Failed to load beds");
-    }
+    } catch { toast.error("Failed to load beds"); }
   };
 
   const handleAllocate = async (e) => {
@@ -113,12 +135,11 @@ const Tenants = () => {
           <h1 className="text-2xl font-bold text-stone-900" style={{ fontFamily: "Manrope, sans-serif" }}>{t("tenant.title")}</h1>
           <p className="text-stone-500 text-sm">{tenants.filter((t) => t.status === "active").length} active tenants</p>
         </div>
-        <button onClick={() => setShowAdd(true)} data-testid="add-tenant-btn" className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow-md">
+        <button onClick={() => { setShowAdd(true); if (properties[0]) fetchBedsForProperty(properties[0].id); }} data-testid="add-tenant-btn" className="flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow-md">
           <Plus size={15} strokeWidth={2.5} />{t("tenant.add")}
         </button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
@@ -142,25 +163,23 @@ const Tenants = () => {
         </div>
       ) : (
         <div className="space-y-2">
-          {/* Table header - desktop */}
           <div className="hidden md:grid grid-cols-12 gap-3 px-4 text-xs font-semibold text-stone-400 uppercase tracking-wide">
             <div className="col-span-3">Name</div>
             <div className="col-span-2">Phone</div>
             <div className="col-span-2">Check-In</div>
             <div className="col-span-2">KYC</div>
-            <div className="col-span-2">Status</div>
-            <div className="col-span-1">Actions</div>
+            <div className="col-span-1">Status</div>
+            <div className="col-span-2">Actions</div>
           </div>
           {filtered.map((tenant) => (
             <div key={tenant.id} data-testid={`tenant-row-${tenant.id}`} className="bg-white rounded-xl border border-stone-200 p-4 hover:border-stone-300 transition-colors">
-              {/* Desktop */}
               <div className="hidden md:grid grid-cols-12 gap-3 items-center">
                 <div className="col-span-3 flex items-center gap-2.5">
                   <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
                     <span className="text-amber-700 font-semibold text-xs">{tenant.name?.[0]?.toUpperCase()}</span>
                   </div>
                   <div>
-                    <p className="font-medium text-stone-900 text-sm">{tenant.name}</p>
+                    <Link to={`/tenants/${tenant.id}`} className="font-medium text-stone-900 text-sm hover:text-amber-600 transition-colors" data-testid={`tenant-link-${tenant.id}`}>{tenant.name}</Link>
                     <p className="text-xs text-stone-400 truncate">{tenant.email}</p>
                   </div>
                 </div>
@@ -171,21 +190,18 @@ const Tenants = () => {
                     {t(`tenant.kyc.${tenant.kyc_status}`) || tenant.kyc_status}
                   </span>
                 </div>
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${STATUS_BADGES[tenant.status] || "bg-stone-100 text-stone-600"}`}>
                     {t(`tenant.status.${tenant.status}`) || tenant.status}
                   </span>
                 </div>
-                <div className="col-span-1 flex gap-1">
+                <div className="col-span-2 flex gap-1">
+                  <Link to={`/tenants/${tenant.id}`} className="p-1.5 hover:bg-stone-100 rounded text-stone-400 hover:text-stone-700" title="View"><Eye size={14} /></Link>
                   {tenant.kyc_status === "pending" && (
-                    <button onClick={() => handleKYC(tenant.id, "verified")} title="Verify KYC" className="p-1.5 hover:bg-lime-50 rounded text-stone-400 hover:text-lime-600">
-                      <CheckCircle size={14} />
-                    </button>
+                    <button onClick={() => handleKYC(tenant.id, "verified")} title="Verify KYC" className="p-1.5 hover:bg-lime-50 rounded text-stone-400 hover:text-lime-600"><CheckCircle size={14} /></button>
                   )}
-                  {!tenant.bed_id && (
-                    <button onClick={() => openAllocate(tenant)} title="Allocate Bed" className="p-1.5 hover:bg-amber-50 rounded text-stone-400 hover:text-amber-600">
-                      <Bed size={14} />
-                    </button>
+                  {!tenant.bed_id && tenant.status === "active" && (
+                    <button onClick={() => openAllocate(tenant)} title="Allocate Bed" className="p-1.5 hover:bg-amber-50 rounded text-stone-400 hover:text-amber-600"><Bed size={14} /></button>
                   )}
                 </div>
               </div>
@@ -198,18 +214,18 @@ const Tenants = () => {
                       <span className="text-amber-700 font-semibold text-sm">{tenant.name?.[0]?.toUpperCase()}</span>
                     </div>
                     <div>
-                      <p className="font-semibold text-stone-900 text-sm">{tenant.name}</p>
+                      <Link to={`/tenants/${tenant.id}`} className="font-semibold text-stone-900 text-sm hover:text-amber-600">{tenant.name}</Link>
                       <p className="text-xs text-stone-400">{tenant.phone}</p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${STATUS_BADGES[tenant.status] || "bg-stone-100 text-stone-600"}`}>{tenant.status}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${KYC_BADGES[tenant.kyc_status] || "bg-stone-100 text-stone-600"}`}>{tenant.kyc_status}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${STATUS_BADGES[tenant.status]}`}>{tenant.status}</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${KYC_BADGES[tenant.kyc_status]}`}>{tenant.kyc_status}</span>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-2">
-                  {tenant.kyc_status === "pending" && <button onClick={() => handleKYC(tenant.id, "verified")} className="flex-1 py-1.5 text-xs bg-lime-50 text-lime-700 rounded-lg font-medium hover:bg-lime-100">Verify KYC</button>}
-                  {!tenant.bed_id && <button onClick={() => openAllocate(tenant)} className="flex-1 py-1.5 text-xs bg-amber-50 text-amber-700 rounded-lg font-medium hover:bg-amber-100">Allocate Bed</button>}
+                  <Link to={`/tenants/${tenant.id}`} className="flex-1 py-1.5 text-xs bg-stone-50 text-stone-700 rounded-lg font-medium hover:bg-stone-100 text-center">View Details</Link>
+                  {!tenant.bed_id && tenant.status === "active" && <button onClick={() => openAllocate(tenant)} className="flex-1 py-1.5 text-xs bg-amber-50 text-amber-700 rounded-lg font-medium hover:bg-amber-100">Allocate Bed</button>}
                 </div>
               </div>
             </div>
@@ -241,10 +257,28 @@ const Tenants = () => {
               </div>
               <div>
                 <label className="block text-xs font-medium text-stone-600 mb-1">{t("common.property")} *</label>
-                <select value={form.property_id} onChange={(e) => setForm({ ...form, property_id: e.target.value })} className={`${inp} appearance-none bg-white`}>
+                <select value={form.property_id} onChange={(e) => handlePropertyChange(e.target.value)} className={`${inp} appearance-none bg-white`}>
                   {properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
+
+              {/* Room/Bed Assignment at Onboarding */}
+              <div className="col-span-2">
+                <label className="block text-xs font-medium text-stone-600 mb-1">Assign Room & Bed (Optional)</label>
+                {noRoomWarning && (
+                  <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg mb-2" data-testid="no-rooms-warning">
+                    <AlertTriangle size={14} className="text-amber-600 flex-shrink-0" />
+                    <p className="text-xs text-amber-700">No available rooms/beds in this property. Add rooms/beds first or skip assignment.</p>
+                  </div>
+                )}
+                {onboardingBeds.length > 0 && (
+                  <select value={form.bed_id} onChange={(e) => { const bed = onboardingBeds.find((b) => b.id === e.target.value); setForm({ ...form, bed_id: e.target.value, room_id: bed?.room_id || "" }); }} className={`${inp} appearance-none bg-white`} data-testid="onboarding-bed-select">
+                    <option value="">-- Skip (assign later) --</option>
+                    {onboardingBeds.map((b) => <option key={b.id} value={b.id}>Room {b.room_number} - Bed {b.bed_number} ({t("common.inr")}{b.price}/mo)</option>)}
+                  </select>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-medium text-stone-600 mb-1">{t("tenant.emergency")} *</label>
                 <input required value={form.emergency_contact_name} onChange={(e) => setForm({ ...form, emergency_contact_name: e.target.value })} className={inp} />
@@ -282,7 +316,7 @@ const Tenants = () => {
               ) : (
                 <select required value={allocateData.bed_id} onChange={(e) => { const bed = allBeds.find((b) => b.id === e.target.value); setAllocateData({ bed_id: e.target.value, room_id: bed?.room_id || "" }); }} className={`${inp} appearance-none bg-white`}>
                   <option value="">-- Select bed --</option>
-                  {allBeds.map((b) => <option key={b.id} value={b.id}>Room {b.room_number} - Bed {b.bed_number} (₹{b.price}/mo)</option>)}
+                  {allBeds.map((b) => <option key={b.id} value={b.id}>Room {b.room_number} - Bed {b.bed_number} ({t("common.inr")}{b.price}/mo)</option>)}
                 </select>
               )}
             </div>
