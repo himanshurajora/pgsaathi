@@ -179,6 +179,7 @@ const Properties = () => {
                     </span>
                   </div>
                   <p className="text-xs text-stone-400 mb-3 line-clamp-1">{prop.address}</p>
+                  {prop.allows_visitors === false && <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-600 mb-2">No Visitors</span>}
                   <div className="flex items-center gap-4 pt-3 border-t border-stone-100">
                     <div className="text-center">
                       <p className="text-base font-bold text-stone-900" style={{ fontFamily: "Manrope, sans-serif" }}>{stats.total_beds || 0}</p>
