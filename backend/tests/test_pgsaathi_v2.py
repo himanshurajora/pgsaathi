@@ -66,16 +66,12 @@ class TestAuth:
         assert data["user"]["email"] == unique_email
         assert data["user"]["role"] == "owner"
 
-    def test_login_success(self, api_client):
-        """Test successful login"""
-        resp = api_client.post(f"{BASE_URL}/api/auth/login", json={
-            "email": "TEST_owner_v2@pgsaathi.com",
-            "password": "Test@1234"
-        })
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "token" in data
-        assert data["user"]["email"] == "TEST_owner_v2@pgsaathi.com"
+    def test_login_success(self, auth_client):
+        """Test successful login - auth_client fixture already logs in"""
+        # auth_client fixture handles login, verify we have a token
+        assert state.get("token") is not None
+        assert state.get("user") is not None
+        assert state["user"]["email"] == "TEST_owner_v2@pgsaathi.com"
 
     def test_login_invalid_password(self, api_client):
         """Test login with wrong password"""
