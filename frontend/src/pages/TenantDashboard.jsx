@@ -81,6 +81,30 @@ const TenantDashboard = () => {
     } catch { toast.error("Failed to download invoice"); }
   };
 
+  const markMealAttendance = async (mealType) => {
+    setMarkingMeal(mealType);
+    try {
+      await API.post("/mess/attendance", { meal_type: mealType });
+      toast.success(`${MEAL_LABELS[mealType] || mealType} attendance marked!`);
+      const mealRes = await API.get("/mess/attendance/today");
+      setMealToday(mealRes.data);
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed to mark attendance"); }
+    finally { setMarkingMeal(""); }
+  };
+
+  const handleVisitorRequest = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await API.post("/visitors", visitorForm);
+      toast.success("Visitor request submitted!");
+      setShowVisitor(false);
+      setVisitorForm({ visitor_name: "", visitor_phone: "", relation: "", purpose: "", visit_date: new Date().toISOString().slice(0, 10), visit_time: "" });
+      fetchAll();
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+    finally { setSaving(false); }
+  };
+
   const inp = "w-full h-10 px-3 border border-stone-200 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 rounded-lg outline-none text-sm";
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 rounded-full border-2 border-amber-600 border-t-transparent animate-spin" /></div>;
