@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import API from "../services/api";
-import { Plus, CreditCard, Search, IndianRupee, Calendar } from "lucide-react";
+import { Plus, CreditCard, Search, IndianRupee, Calendar, FileText, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
@@ -26,6 +26,9 @@ const RentManagement = () => {
   const [showCreateInv, setShowCreateInv] = useState(false);
   const [showRecPay, setShowRecPay] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [showBulk, setShowBulk] = useState(false);
+  const [bulkForm, setBulkForm] = useState({ property_id: "", include_food: false });
+  const [bulking, setBulking] = useState(false);
 
   const now = new Date();
   const [invForm, setInvForm] = useState({
@@ -77,6 +80,36 @@ const RentManagement = () => {
     setShowRecPay(inv);
   };
 
+  const handleBulkGenerate = async (e) => {
+    e.preventDefault();
+    setBulking(true);
+    try {
+      const res = await API.post("/invoices/bulk", {
+        property_id: bulkForm.property_id,
+        billing_month: now.getMonth() + 1,
+        billing_year: now.getFullYear(),
+        include_food: bulkForm.include_food,
+      });
+      toast.success(`${res.data.created} invoices created, ${res.data.skipped?.length || 0} skipped`);
+      setShowBulk(false);
+      fetchAll();
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+    finally { setBulking(false); }
+  };
+
+  const downloadInvoice = async (invoiceId) => {
+    try {
+      const res = await API.get(`/invoices/${invoiceId}/pdf`, { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `invoice_${invoiceId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch { toast.error("Failed to download"); }
+  };
+
   const filteredInvoices = invoices.filter((inv) => !search || inv.tenant_name?.toLowerCase().includes(search.toLowerCase()) || inv.invoice_number?.toLowerCase().includes(search.toLowerCase()));
 
   const inp = "w-full h-10 px-3 border border-stone-200 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 rounded-lg outline-none text-sm";
@@ -91,6 +124,9 @@ const RentManagement = () => {
           <p className="text-stone-500 text-sm">{invoices.length} invoices total</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={() => { setShowBulk(true); if (properties[0]) setBulkForm((f) => ({ ...f, property_id: f.property_id || properties[0]?.id })); }} data-testid="bulk-invoice-btn" className="flex items-center gap-1.5 px-3.5 py-2 bg-stone-800 hover:bg-stone-900 text-white rounded-lg text-sm font-semibold shadow-sm transition-all">
+            <Zap size={14} />Bulk Generate
+          </button>
           <button onClick={() => setShowCreateInv(true)} data-testid="create-invoice-btn" className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-semibold shadow-sm hover:shadow-md transition-all">
             <Plus size={14} strokeWidth={2.5} />{t("rent.create_invoice")}
           </button>
@@ -134,7 +170,10 @@ const RentManagement = () => {
                   <div className="flex items-center gap-4 mt-3 pt-2.5 border-t border-stone-100">
                     <div className="text-xs text-stone-500">Rent: <span className="font-medium text-stone-700">₹{inv.rent_amount?.toLocaleString("en-IN")}</span></div>
                     {inv.food_amount > 0 && <div className="text-xs text-stone-500">Food: <span className="font-medium text-stone-700">₹{inv.food_amount?.toLocaleString("en-IN")}</span></div>}
-                    <div className="ml-auto">
+                    <div className="ml-auto flex gap-1.5">
+                      <button onClick={() => downloadInvoice(inv.id)} className="px-2.5 py-1.5 bg-stone-50 hover:bg-stone-100 text-stone-600 rounded-lg text-xs font-medium transition-colors" data-testid={`download-pdf-${inv.id}`}>
+                        <FileText size={12} className="inline mr-1" />PDF
+                      </button>
                       {inv.status !== "paid" && (
                         <button onClick={() => openPayment(inv)} className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-semibold transition-colors">
                           Record Payment
