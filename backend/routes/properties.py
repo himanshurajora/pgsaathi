@@ -39,6 +39,7 @@ async def create_property(data: PropertyCreate, current_user=Depends(get_current
         "gender_type": data.gender_type,
         "house_rules": data.house_rules or "",
         "contact_phone": data.contact_phone or "",
+        "allows_visitors": data.allows_visitors if hasattr(data, 'allows_visitors') else True,
         "is_active": True,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
