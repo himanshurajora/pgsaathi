@@ -173,6 +173,58 @@ const TenantDashboard = () => {
             </div>
           )}
 
+          {/* Meal Attendance - Quick Mark */}
+          {mealToday?.plan && (
+            <div className="bg-white rounded-xl border border-stone-200 p-5" data-testid="meal-attendance-card">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-amber-50 rounded-lg"><Utensils size={16} className="text-amber-600" /></div>
+                  <div>
+                    <h3 className="font-semibold text-stone-900 text-sm" style={{ fontFamily: "Manrope, sans-serif" }}>Today's Meals</h3>
+                    <p className="text-[10px] text-stone-400 uppercase">Mark your attendance</p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {(mealToday.plan.opted_meals || []).map((meal) => {
+                  const marked = mealToday.attendance?.some((a) => a.meal_type === meal && a.present);
+                  return (
+                    <button
+                      key={meal}
+                      onClick={() => !marked && markMealAttendance(meal)}
+                      disabled={marked || markingMeal === meal}
+                      data-testid={`mark-meal-${meal}`}
+                      className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                        marked
+                          ? "bg-lime-100 text-lime-700 border-2 border-lime-300 cursor-default"
+                          : "bg-amber-50 text-amber-700 border-2 border-amber-200 hover:border-amber-400 hover:bg-amber-100 cursor-pointer"
+                      } ${markingMeal === meal ? "opacity-60" : ""}`}
+                    >
+                      {marked ? <Check size={16} strokeWidth={2.5} /> : <Utensils size={14} />}
+                      <span className="capitalize">{MEAL_LABELS[meal] || meal}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {mealToday.config?.tracking_mode === "attendance" && (
+                <p className="text-[10px] text-stone-400 mt-2">Attendance-based billing: you pay only for meals you attend.</p>
+              )}
+            </div>
+          )}
+
+          {/* Visitor Fines Alert */}
+          {visitors.some((v) => v.status === "fined" && v.fine_amount > 0) && (
+            <div className="bg-red-50 rounded-xl border border-red-200 p-4" data-testid="visitor-fines-alert">
+              <h3 className="font-semibold text-red-700 text-sm mb-2">Visitor Fines</h3>
+              {visitors.filter((v) => v.status === "fined" && v.fine_amount > 0).map((v) => (
+                <div key={v.id} className="flex items-center justify-between py-1">
+                  <span className="text-xs text-red-600">{v.visitor_name} - {v.fine_reason}</span>
+                  <span className="text-xs font-bold text-red-700">{t("common.inr")}{v.fine_amount}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           <Tabs defaultValue="invoices">
             <TabsList className="bg-stone-100 border-0 p-1 rounded-xl">
               <TabsTrigger value="invoices" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">Invoices</TabsTrigger>
