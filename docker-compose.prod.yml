@@ -1,14 +1,6 @@
 version: "3.8"
 
 services:
-  # ── MongoDB ──────────────────────────────────────────────
-  mongo:
-    image: mongo:7
-    container_name: pgsaathi-mongo
-    restart: unless-stopped
-    volumes:
-      - mongo_data:/data/db
-    # No ports exposed externally — only accessible within Docker network
 
   # ── Backend (FastAPI) ────────────────────────────────────
   backend:
@@ -20,9 +12,7 @@ services:
     env_file:
       - ./backend/.env.prod
     environment:
-      - MONGO_URL=mongodb://mongo:27017
-    depends_on:
-      - mongo
+      # Set MONGO_URL in backend/.env.prod for Atlas
 
   # ── Frontend (React static build served by nginx) ───────
   frontend:
@@ -63,6 +53,5 @@ services:
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done'"
 
 volumes:
-  mongo_data:
   certbot_www:
   certbot_certs:
