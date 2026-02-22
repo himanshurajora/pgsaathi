@@ -317,6 +317,34 @@ const TenantDashboard = () => {
               )}
             </TabsContent>
 
+            <TabsContent value="visitors" className="mt-4">
+              <div className="flex justify-end mb-3">
+                <button onClick={() => setShowVisitor(true)} data-testid="tenant-request-visitor-btn" className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-semibold">
+                  <UserPlus size={14} /> Request Visitor
+                </button>
+              </div>
+              {visitors.length === 0 ? (
+                <div className="bg-white rounded-xl border border-stone-200 p-8 text-center">
+                  <UserPlus size={32} className="text-stone-200 mx-auto mb-2" />
+                  <p className="text-stone-400 text-sm">No visitor requests</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {visitors.map((v) => (
+                    <div key={v.id} className="bg-white rounded-xl border border-stone-200 p-4">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-stone-900 text-sm">{v.visitor_name}</h3>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${VISITOR_STATUS[v.status] || "bg-stone-100"}`}>{v.status}</span>
+                        {v.fine_amount > 0 && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-700">Fine: {t("common.inr")}{v.fine_amount}</span>}
+                      </div>
+                      <p className="text-xs text-stone-500">{v.visit_date}{v.visit_time ? ` at ${v.visit_time}` : ""}{v.relation ? ` · ${v.relation}` : ""}</p>
+                      {v.fine_reason && v.status === "fined" && <p className="text-xs text-red-600 mt-1">{v.fine_reason}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
             <TabsContent value="notices" className="mt-4">
               {notices.length === 0 ? (
                 <div className="bg-white rounded-xl border border-stone-200 p-8 text-center">
