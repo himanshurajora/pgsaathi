@@ -2,14 +2,16 @@ import React, { useState, useEffect } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import API from "../services/api";
-import { Home, IndianRupee, MessageSquare, Utensils, Bell as BellIcon, FileText, Bed, Building2, Phone, Mail } from "lucide-react";
+import { Home, IndianRupee, MessageSquare, Utensils, Bell as BellIcon, FileText, Bed, Building2, Phone, Mail, UserPlus, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 
 const STATUS_STYLES = { paid: "bg-lime-100 text-lime-700", partial: "bg-amber-100 text-amber-700", overdue: "bg-red-100 text-red-700", pending: "bg-stone-100 text-stone-600" };
 const COMPLAINT_STATUS = { open: "bg-red-100 text-red-700", in_progress: "bg-amber-100 text-amber-700", resolved: "bg-lime-100 text-lime-700", closed: "bg-stone-100 text-stone-500" };
+const VISITOR_STATUS = { pending: "bg-amber-100 text-amber-700", approved: "bg-lime-100 text-lime-700", rejected: "bg-red-100 text-red-700", fined: "bg-red-100 text-red-700" };
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MEAL_LABELS = { breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner", snacks: "Snacks" };
 
 const TenantDashboard = () => {
   const { t } = useLanguage();
@@ -19,25 +21,34 @@ const TenantDashboard = () => {
   const [payments, setPayments] = useState([]);
   const [complaints, setComplaints] = useState([]);
   const [notices, setNotices] = useState([]);
+  const [visitors, setVisitors] = useState([]);
+  const [mealToday, setMealToday] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showComplaint, setShowComplaint] = useState(false);
+  const [showVisitor, setShowVisitor] = useState(false);
   const [complaintForm, setComplaintForm] = useState({ category: "other", title: "", description: "", priority: "medium" });
+  const [visitorForm, setVisitorForm] = useState({ visitor_name: "", visitor_phone: "", relation: "", purpose: "", visit_date: new Date().toISOString().slice(0, 10), visit_time: "" });
   const [saving, setSaving] = useState(false);
+  const [markingMeal, setMarkingMeal] = useState("");
 
   const fetchAll = async () => {
     try {
-      const [dashRes, invRes, payRes, compRes, notRes] = await Promise.all([
+      const [dashRes, invRes, payRes, compRes, notRes, visRes, mealRes] = await Promise.all([
         API.get("/tenant-portal/dashboard"),
         API.get("/tenant-portal/invoices"),
         API.get("/tenant-portal/payments"),
         API.get("/tenant-portal/complaints"),
         API.get("/tenant-portal/notices"),
+        API.get("/tenant-portal/visitors").catch(() => ({ data: [] })),
+        API.get("/mess/attendance/today").catch(() => ({ data: { plan: null, attendance: [], config: null } })),
       ]);
       setData(dashRes.data);
       setInvoices(invRes.data);
       setPayments(payRes.data);
       setComplaints(compRes.data);
       setNotices(notRes.data);
+      setVisitors(visRes.data);
+      setMealToday(mealRes.data);
     } catch { toast.error("Failed to load data"); }
     finally { setLoading(false); }
   };
