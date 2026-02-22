@@ -144,10 +144,10 @@ const Dashboard = () => {
             <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Quick Actions</p>
             <div className="space-y-1">
               {[
-                { label: "Add Tenant", link: "/tenants", dot: "bg-amber-500" },
-                { label: "Generate Invoice", link: "/rent", dot: "bg-lime-600" },
-                { label: "View Complaints", link: "/complaints", dot: "bg-red-500" },
-                { label: "Manage Properties", link: "/properties", dot: "bg-stone-400" },
+                { label: t("tenant.add"), link: "/tenants", dot: "bg-amber-500" },
+                { label: t("rent.create_invoice"), link: "/rent", dot: "bg-lime-600" },
+                { label: t("complaint.title"), link: "/complaints", dot: "bg-red-500" },
+                { label: t("prop.title"), link: "/properties", dot: "bg-stone-400" },
               ].map((a) => (
                 <Link key={a.link} to={a.link} className="flex items-center gap-2.5 p-2 hover:bg-stone-50 rounded-lg text-sm text-stone-600 hover:text-amber-700 transition-colors group">
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${a.dot}`} />
