@@ -22,6 +22,8 @@ import Housekeeping from "./pages/Housekeeping";
 import Settings from "./pages/Settings";
 import UserManagement from "./pages/UserManagement";
 import Visitors from "./pages/Visitors";
+import Feedback from "./pages/Feedback";
+import ForgotPassword from "./pages/ForgotPassword";
 import "./App.css";
 
 const LoadingScreen = () => (
@@ -62,6 +64,7 @@ function AppRoutes() {
       <Route path="/select-language" element={<LanguageSelector />} />
       <Route path="/login" element={<LanguageGuard><PublicGuard><Login /></PublicGuard></LanguageGuard>} />
       <Route path="/register" element={<LanguageGuard><PublicGuard><Register /></PublicGuard></LanguageGuard>} />
+      <Route path="/forgot-password" element={<LanguageGuard><PublicGuard><ForgotPassword /></PublicGuard></LanguageGuard>} />
       <Route path="/" element={<LanguageGuard><AuthGuard><Layout /></AuthGuard></LanguageGuard>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
@@ -77,6 +80,7 @@ function AppRoutes() {
         <Route path="notices" element={<NoticeBoard />} />
         <Route path="housekeeping" element={<Housekeeping />} />
         <Route path="visitors" element={<Visitors />} />
+        <Route path="feedback" element={<Feedback />} />
         <Route path="settings" element={<Settings />} />
         <Route path="users" element={<UserManagement />} />
       </Route>

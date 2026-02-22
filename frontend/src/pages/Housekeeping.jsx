@@ -63,7 +63,7 @@ const Housekeeping = () => {
   const inp = "w-full h-10 px-3 border border-stone-200 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 rounded-lg outline-none text-sm";
 
   return (
-    <div className="space-y-5" data-testid="housekeeping-page">
+    <div className="space-y-6" data-testid="housekeeping-page">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-stone-900" style={{ fontFamily: "Manrope, sans-serif" }}>Housekeeping & Maintenance</h1>
@@ -92,11 +92,11 @@ const Housekeeping = () => {
           <p className="text-stone-400 text-sm">No tasks found</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {filtered.map((task) => {
             const Icon = TYPE_ICONS[task.task_type] || Wrench;
             return (
-              <div key={task.id} data-testid={`task-${task.id}`} className="bg-white rounded-xl border border-stone-200 p-4">
+              <div key={task.id} data-testid={`task-${task.id}`} className="bg-white rounded-xl border border-stone-200 p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-stone-50"><Icon size={16} className="text-stone-500" /></div>

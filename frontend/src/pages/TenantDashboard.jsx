@@ -113,7 +113,7 @@ const TenantDashboard = () => {
   const noTenant = !tenant;
 
   return (
-    <div className="space-y-5" data-testid="tenant-dashboard">
+    <div className="space-y-6" data-testid="tenant-dashboard">
       <div>
         <h1 className="text-2xl font-bold text-stone-900" style={{ fontFamily: "Manrope, sans-serif" }}>
           {t("nav.dashboard")}
@@ -129,25 +129,25 @@ const TenantDashboard = () => {
       ) : (
         <>
           {/* Quick Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="bg-white rounded-xl border border-stone-200 p-4" data-testid="stat-pending-dues">
-              <p className="text-xs text-stone-500 uppercase tracking-wide mb-1">Pending Dues</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-xl border border-stone-200 p-5" data-testid="stat-pending-dues">
+              <p className="text-xs text-stone-500 uppercase tracking-wide mb-1.5">Pending Dues</p>
               <p className="text-2xl font-bold text-red-500" style={{ fontFamily: "Manrope, sans-serif" }}>
                 {t("common.inr")}{(data?.pending_dues || 0).toLocaleString("en-IN")}
               </p>
             </div>
-            <div className="bg-white rounded-xl border border-stone-200 p-4" data-testid="stat-monthly-rent">
-              <p className="text-xs text-stone-500 uppercase tracking-wide mb-1">Monthly Rent</p>
+            <div className="bg-white rounded-xl border border-stone-200 p-5" data-testid="stat-monthly-rent">
+              <p className="text-xs text-stone-500 uppercase tracking-wide mb-1.5">Monthly Rent</p>
               <p className="text-2xl font-bold text-amber-600" style={{ fontFamily: "Manrope, sans-serif" }}>
                 {t("common.inr")}{(tenant?.monthly_rent || 0).toLocaleString("en-IN")}
               </p>
             </div>
-            <div className="bg-white rounded-xl border border-stone-200 p-4" data-testid="stat-complaints">
-              <p className="text-xs text-stone-500 uppercase tracking-wide mb-1">Open Complaints</p>
+            <div className="bg-white rounded-xl border border-stone-200 p-5" data-testid="stat-complaints">
+              <p className="text-xs text-stone-500 uppercase tracking-wide mb-1.5">Open Complaints</p>
               <p className="text-2xl font-bold text-stone-700" style={{ fontFamily: "Manrope, sans-serif" }}>{data?.open_complaints || 0}</p>
             </div>
-            <div className="bg-white rounded-xl border border-stone-200 p-4" data-testid="stat-room">
-              <p className="text-xs text-stone-500 uppercase tracking-wide mb-1">Room / Bed</p>
+            <div className="bg-white rounded-xl border border-stone-200 p-5" data-testid="stat-room">
+              <p className="text-xs text-stone-500 uppercase tracking-wide mb-1.5">Room / Bed</p>
               <p className="text-lg font-bold text-stone-700" style={{ fontFamily: "Manrope, sans-serif" }}>
                 {data?.room_info ? `Room ${data.room_info.room_number}` : "Not assigned"}
                 {data?.bed_info ? ` / ${data.bed_info.bed_number}` : ""}
@@ -241,9 +241,9 @@ const TenantDashboard = () => {
                   <p className="text-stone-400 text-sm">No invoices yet</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {invoices.map((inv) => (
-                    <div key={inv.id} data-testid={`tenant-invoice-${inv.id}`} className="bg-white rounded-xl border border-stone-200 p-4">
+                    <div key={inv.id} data-testid={`tenant-invoice-${inv.id}`} className="bg-white rounded-xl border border-stone-200 p-5">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
@@ -275,9 +275,9 @@ const TenantDashboard = () => {
                   <p className="text-stone-400 text-sm">No payments recorded</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {payments.map((pay) => (
-                    <div key={pay.id} className="bg-white rounded-xl border border-stone-200 p-4 flex justify-between items-center">
+                    <div key={pay.id} className="bg-white rounded-xl border border-stone-200 p-5 flex justify-between items-center">
                       <div>
                         <p className="font-medium text-stone-900 text-sm">{pay.receipt_number}</p>
                         <p className="text-xs text-stone-400">{pay.payment_date} &middot; <span className="capitalize">{pay.payment_mode?.replace("_", " ")}</span></p>
@@ -301,9 +301,9 @@ const TenantDashboard = () => {
                   <p className="text-stone-400 text-sm">No complaints</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {complaints.map((c) => (
-                    <div key={c.id} data-testid={`tenant-complaint-${c.id}`} className="bg-white rounded-xl border border-stone-200 p-4">
+                    <div key={c.id} data-testid={`tenant-complaint-${c.id}`} className="bg-white rounded-xl border border-stone-200 p-5">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold text-stone-900 text-sm">{c.title}</h3>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${COMPLAINT_STATUS[c.status] || "bg-stone-100"}`}>{c.status?.replace("_", " ")}</span>
@@ -329,9 +329,9 @@ const TenantDashboard = () => {
                   <p className="text-stone-400 text-sm">No visitor requests</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {visitors.map((v) => (
-                    <div key={v.id} className="bg-white rounded-xl border border-stone-200 p-4">
+                    <div key={v.id} className="bg-white rounded-xl border border-stone-200 p-5">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold text-stone-900 text-sm">{v.visitor_name}</h3>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${VISITOR_STATUS[v.status] || "bg-stone-100"}`}>{v.status}</span>
@@ -352,9 +352,9 @@ const TenantDashboard = () => {
                   <p className="text-stone-400 text-sm">No notices</p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {notices.map((n) => (
-                    <div key={n.id} className="bg-white rounded-xl border border-stone-200 p-4">
+                    <div key={n.id} className="bg-white rounded-xl border border-stone-200 p-5">
                       <div className="flex items-center gap-2 mb-1">
                         {n.is_pinned && <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-semibold">PINNED</span>}
                         <h3 className="font-semibold text-stone-900 text-sm">{n.title}</h3>

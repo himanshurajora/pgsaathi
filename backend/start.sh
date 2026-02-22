@@ -1,0 +1,1 @@
+lsof -ti:8000 | xargs kill -9 2>/dev/null; sleep 1 && cd /home/himanshu/workspace/pgsaathi/backend && source env/bin/activate && uvicorn server:app --host 0.0.0.0 --port 8000 --reload

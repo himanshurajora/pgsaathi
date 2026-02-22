@@ -111,7 +111,7 @@ const TenantDetail = () => {
   const totalPaid = payments.reduce((s, p) => s + (p.amount || 0), 0);
 
   return (
-    <div className="space-y-5" data-testid="tenant-detail-page">
+    <div className="space-y-6" data-testid="tenant-detail-page">
       <div className="flex items-center gap-3">
         <Link to="/tenants" className="p-2 hover:bg-stone-100 rounded-lg text-stone-500 hover:text-stone-800"><ArrowLeft size={18} /></Link>
         <div className="flex-1">
@@ -232,7 +232,7 @@ const TenantDetail = () => {
           <TabsTrigger value="payments" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">Payments ({payments.length})</TabsTrigger>
           <TabsTrigger value="complaints" className="rounded-lg text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">Complaints ({complaints.length})</TabsTrigger>
         </TabsList>
-        <TabsContent value="invoices" className="mt-4 space-y-2">
+        <TabsContent value="invoices" className="mt-6 space-y-3">
           {invoices.map((inv) => (
             <div key={inv.id} className="bg-white rounded-xl border border-stone-200 p-4 flex items-center justify-between">
               <div>
@@ -246,7 +246,7 @@ const TenantDetail = () => {
             </div>
           ))}
         </TabsContent>
-        <TabsContent value="payments" className="mt-4 space-y-2">
+        <TabsContent value="payments" className="mt-6 space-y-3">
           {payments.map((pay) => (
             <div key={pay.id} className="bg-white rounded-xl border border-stone-200 p-4 flex justify-between items-center">
               <div>
@@ -257,7 +257,7 @@ const TenantDetail = () => {
             </div>
           ))}
         </TabsContent>
-        <TabsContent value="complaints" className="mt-4 space-y-2">
+        <TabsContent value="complaints" className="mt-6 space-y-3">
           {complaints.map((c) => (
             <div key={c.id} className="bg-white rounded-xl border border-stone-200 p-4">
               <div className="flex items-center gap-2 mb-1">

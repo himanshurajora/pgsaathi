@@ -106,7 +106,7 @@ const PropertyDetail = () => {
   const genderColors = { boys: "bg-blue-100 text-blue-700", girls: "bg-pink-100 text-pink-700", "co-living": "bg-purple-100 text-purple-700" };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-stone-500">
         <Link to="/properties" className="hover:text-amber-600 transition-colors">{t("prop.title")}</Link>

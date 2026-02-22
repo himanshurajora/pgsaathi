@@ -55,7 +55,7 @@ const Dashboard = () => {
   const noProperties = !stats?.total_properties;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -75,7 +75,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mt-2">
         <StatCard icon={Building2} label={t("dash.total_properties")} value={stats?.total_properties || 0} sub="Active" colorClass="text-amber-600" bgClass="bg-amber-50" />
         <StatCard icon={Users} label={t("dash.total_tenants")} value={stats?.total_tenants || 0} sub={`${stats?.occupancy_rate || 0}% occupancy`} colorClass="text-lime-700" bgClass="bg-lime-50" />
         <StatCard
@@ -112,7 +112,7 @@ const Dashboard = () => {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-2">
           {/* Occupancy progress */}
           <div className="bg-white rounded-xl border border-stone-200 p-5">
             <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Bed Occupancy</p>
@@ -142,7 +142,7 @@ const Dashboard = () => {
           {/* Quick actions */}
           <div className="bg-white rounded-xl border border-stone-200 p-5">
             <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">{t("dash.quick_actions")}</p>
-            <div className="space-y-1">
+            <div className="space-y-2">
               {[
                 { label: t("tenant.add"), link: "/tenants", dot: "bg-amber-500" },
                 { label: t("rent.create_invoice"), link: "/rent", dot: "bg-lime-600" },
@@ -161,14 +161,14 @@ const Dashboard = () => {
 
       {/* Recent tenants */}
       {stats?.recent_tenants?.length > 0 && (
-        <div className="bg-white rounded-xl border border-stone-200 p-5">
+        <div className="bg-white rounded-xl border border-stone-200 p-5 mt-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-stone-900 text-sm" style={{ fontFamily: "Manrope, sans-serif" }}>{t("dash.recent_tenants")}</h3>
             <Link to="/tenants" className="text-amber-600 hover:text-amber-700 text-xs font-medium">View all →</Link>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {stats.recent_tenants.map((tenant) => (
-              <div key={tenant.id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-stone-50 transition-colors">
+              <div key={tenant.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-stone-50 transition-colors">
                 <div className="w-9 h-9 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-amber-700 font-semibold text-sm">{tenant.name?.[0]?.toUpperCase()}</span>
                 </div>

@@ -85,7 +85,7 @@ const Visitors = () => {
   const inp = "w-full h-10 px-3 border border-stone-200 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 rounded-lg outline-none text-sm";
 
   return (
-    <div className="space-y-5" data-testid="visitors-page">
+    <div className="space-y-6" data-testid="visitors-page">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-stone-900" style={{ fontFamily: "Manrope, sans-serif" }}>Visitors</h1>
@@ -114,12 +114,12 @@ const Visitors = () => {
           <p className="text-stone-400 text-sm">No visitor requests</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {filtered.map((v) => (
-            <div key={v.id} data-testid={`visitor-${v.id}`} className="bg-white rounded-xl border border-stone-200 p-4">
+            <div key={v.id} data-testid={`visitor-${v.id}`} className="bg-white rounded-xl border border-stone-200 p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <div className="flex items-center gap-2 flex-wrap mb-2">
                     <h3 className="font-semibold text-stone-900 text-sm">{v.visitor_name}</h3>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${STATUS_STYLES[v.status] || "bg-stone-100"}`}>{v.status}</span>
                     {v.fine_amount > 0 && (

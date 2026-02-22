@@ -24,6 +24,7 @@ from routes.housekeeping import router as housekeeping_router
 from routes.users import router as users_router
 from routes.tenant_portal import router as tenant_portal_router
 from routes.visitors import router as visitors_router
+from routes.feedback import router as feedback_router
 import resend
 
 ROOT_DIR = Path(__file__).parent
@@ -45,6 +46,35 @@ app.add_middleware(
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+MAX_OTP_PER_DAY = 3
+
+
+async def _check_otp_rate_limit(email: str):
+    """Check if email has exceeded OTP rate limit (3 per day). Returns count sent today."""
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    count = await db.otp_codes.count_documents({
+        "email": email,
+        "created_at": {"$gte": today_start},
+    })
+    if count >= MAX_OTP_PER_DAY:
+        raise HTTPException(status_code=429, detail=f"OTP limit reached. Maximum {MAX_OTP_PER_DAY} OTPs per day. Try again tomorrow.")
+    return count
+
+
+async def _create_and_send_otp(email: str, name: str, purpose: str = "verification"):
+    """Unified OTP creation and sending. Respects rate limits."""
+    await _check_otp_rate_limit(email)
+    otp = str(random.randint(100000, 999999))
+    print(f"Generated OTP for {email} (purpose: {purpose}): {otp}")  # For debugging, remove in production
+    await db.otp_codes.insert_one({
+        "email": email,
+        "otp": otp,
+        "purpose": purpose,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    sent = await _send_otp_email(email, otp, name)
+    return otp, sent
 
 
 @api_router.get("/")
@@ -91,15 +121,8 @@ async def register(user_data: UserCreate):
     existing = await db.users.find_one({"email": user_data.email})
     if existing:
         if existing.get("is_verified") is False:
-            otp = str(random.randint(100000, 999999))
-            await db.otp_codes.delete_many({"email": user_data.email})
-            await db.otp_codes.insert_one({
-                "email": user_data.email,
-                "otp": otp,
-                "created_at": datetime.now(timezone.utc).isoformat(),
-            })
-            await _send_otp_email(user_data.email, otp, existing.get("name", ""))
-            return {"message": "OTP resent. Please verify your email.", "requires_otp": True, "email": user_data.email}
+            otp, sent = await _create_and_send_otp(user_data.email, existing.get("name", ""), "verification")
+            return {"message": "OTP resent. Please verify your email.", "requires_otp": True, "email": user_data.email, "email_sent": sent}
         raise HTTPException(status_code=400, detail="Email already registered")
     user = {
         "id": str(uuid.uuid4()),
@@ -113,13 +136,7 @@ async def register(user_data: UserCreate):
         "is_verified": False,
     }
     await db.users.insert_one(user)
-    otp = str(random.randint(100000, 999999))
-    await db.otp_codes.insert_one({
-        "email": user_data.email,
-        "otp": otp,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    })
-    sent = await _send_otp_email(user_data.email, otp, user_data.name)
+    otp, sent = await _create_and_send_otp(user_data.email, user_data.name, "verification")
     return {"message": "Account created. Please verify your email.", "requires_otp": True, "email": user_data.email, "email_sent": sent}
 
 
@@ -127,17 +144,23 @@ async def register(user_data: UserCreate):
 async def verify_otp(body: dict):
     email = body.get("email")
     otp = body.get("otp")
+    purpose = body.get("purpose", "verification")
     if not email or not otp:
         raise HTTPException(status_code=400, detail="Email and OTP are required")
-    record = await db.otp_codes.find_one({"email": email, "otp": otp})
+    record = await db.otp_codes.find_one({"email": email, "otp": otp, "purpose": purpose})
+    if not record:
+        # Fallback: try without purpose for backward compatibility
+        record = await db.otp_codes.find_one({"email": email, "otp": otp})
     if not record:
         raise HTTPException(status_code=400, detail="Invalid OTP")
     created = datetime.fromisoformat(record["created_at"])
     if (datetime.now(timezone.utc) - created).total_seconds() > 300:
-        await db.otp_codes.delete_many({"email": email})
+        await db.otp_codes.delete_many({"email": email, "purpose": purpose})
         raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
+    await db.otp_codes.delete_many({"email": email, "purpose": purpose})
+    if purpose == "password_reset":
+        return {"message": "OTP verified. You can now reset your password.", "verified": True, "email": email}
     await db.users.update_one({"email": email}, {"$set": {"is_verified": True}})
-    await db.otp_codes.delete_many({"email": email})
     user = await db.users.find_one({"email": email})
     token = create_access_token({"sub": user["id"], "role": user["role"]})
     user_resp = {k: v for k, v in user.items() if k not in ("password_hash", "_id")}
@@ -147,21 +170,15 @@ async def verify_otp(body: dict):
 @api_router.post("/auth/resend-otp")
 async def resend_otp(body: dict):
     email = body.get("email")
+    purpose = body.get("purpose", "verification")
     if not email:
         raise HTTPException(status_code=400, detail="Email is required")
     user = await db.users.find_one({"email": email})
     if not user:
         raise HTTPException(status_code=404, detail="No account found")
-    if user.get("is_verified"):
+    if purpose == "verification" and user.get("is_verified"):
         raise HTTPException(status_code=400, detail="Email already verified")
-    otp = str(random.randint(100000, 999999))
-    await db.otp_codes.delete_many({"email": email})
-    await db.otp_codes.insert_one({
-        "email": email,
-        "otp": otp,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    })
-    sent = await _send_otp_email(email, otp, user.get("name", ""))
+    otp, sent = await _create_and_send_otp(email, user.get("name", ""), purpose)
     return {"message": "OTP resent", "email_sent": sent}
 
 
@@ -171,15 +188,8 @@ async def login(credentials: UserLogin):
     if not user or not pwd_context.verify(credentials.password, user.get("password_hash", "")):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if user.get("is_verified") is False:
-        otp = str(random.randint(100000, 999999))
-        await db.otp_codes.delete_many({"email": credentials.email})
-        await db.otp_codes.insert_one({
-            "email": credentials.email,
-            "otp": otp,
-            "created_at": datetime.now(timezone.utc).isoformat(),
-        })
-        await _send_otp_email(credentials.email, otp, user.get("name", ""))
-        return {"requires_otp": True, "email": credentials.email, "message": "Please verify your email first. OTP sent."}
+        otp, sent = await _create_and_send_otp(credentials.email, user.get("name", ""), "verification")
+        return {"requires_otp": True, "email": credentials.email, "message": "Please verify your email first. OTP sent.", "email_sent": sent}
     token = create_access_token({"sub": user["id"], "role": user["role"]})
     user_resp = {k: v for k, v in user.items() if k not in ("password_hash", "_id")}
     return {"token": token, "user": user_resp}
@@ -436,18 +446,43 @@ async def generate_invoice_pdf(invoice_id: str, current_user=Depends(get_current
     return StreamingResponse(buf, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={filename}"})
 
 
-# === Password Reset (self-service without email) ===
+# === Forgot Password - Step 1: Send OTP ===
+@api_router.post("/auth/forgot-password")
+async def forgot_password(body: dict):
+    email = body.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with this email")
+    otp, sent = await _create_and_send_otp(email, user.get("name", ""), "password_reset")
+    return {"message": "Password reset OTP sent to your email", "email": email, "email_sent": sent}
+
+
+# === Forgot Password - Step 2: Reset with OTP verification ===
 @api_router.post("/auth/reset-password")
 async def reset_password(body: dict):
     email = body.get("email")
+    otp = body.get("otp")
     new_password = body.get("new_password")
     if not email or not new_password:
         raise HTTPException(status_code=400, detail="Email and new_password are required")
+    if not otp:
+        raise HTTPException(status_code=400, detail="OTP is required for password reset")
+    # Verify OTP
+    record = await db.otp_codes.find_one({"email": email, "otp": otp, "purpose": "password_reset"})
+    if not record:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+    created = datetime.fromisoformat(record["created_at"])
+    if (datetime.now(timezone.utc) - created).total_seconds() > 300:
+        await db.otp_codes.delete_many({"email": email, "purpose": "password_reset"})
+        raise HTTPException(status_code=400, detail="OTP expired. Please request a new one.")
     user = await db.users.find_one({"email": email})
     if not user:
         raise HTTPException(status_code=404, detail="No account found with this email")
     new_hash = pwd_context.hash(new_password)
     await db.users.update_one({"email": email}, {"$set": {"password_hash": new_hash}})
+    await db.otp_codes.delete_many({"email": email, "purpose": "password_reset"})
     return {"message": "Password has been reset successfully"}
 
 
@@ -467,6 +502,7 @@ api_router.include_router(housekeeping_router, prefix="/housekeeping", tags=["ho
 api_router.include_router(users_router, prefix="/users", tags=["users"])
 api_router.include_router(tenant_portal_router, prefix="/tenant-portal", tags=["tenant-portal"])
 api_router.include_router(visitors_router, prefix="/visitors", tags=["visitors"])
+api_router.include_router(feedback_router, prefix="/feedback", tags=["feedback"])
 
 app.include_router(api_router)
 

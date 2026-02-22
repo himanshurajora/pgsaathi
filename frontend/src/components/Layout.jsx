@@ -5,7 +5,7 @@ import { useLanguage } from "../context/LanguageContext";
 import {
   LayoutDashboard, Building2, Users, CreditCard,
   MessageSquare, Utensils, BarChart2, LogOut, Bell, Menu, X,
-  Megaphone, Paintbrush, Settings, Shield, UserPlus,
+  Megaphone, Paintbrush, Settings, Shield, UserPlus, Star,
 } from "lucide-react";
 import API from "../services/api";
 import { useEffect } from "react";
@@ -59,6 +59,7 @@ const Layout = () => {
     { path: "/housekeeping", icon: Paintbrush, label: "Housekeeping" },
     { path: "/reports", icon: BarChart2, label: t("nav.reports") },
     { path: "/users", icon: Shield, label: "Users" },
+    { path: "/feedback", icon: Star, label: t("feedback.title") || "Feedback" },
     { path: "/settings", icon: Settings, label: "Settings" },
   ];
 
@@ -66,6 +67,7 @@ const Layout = () => {
     { path: "/tenant", icon: LayoutDashboard, label: t("nav.dashboard") },
     { path: "/visitors", icon: UserPlus, label: "Visitors" },
     { path: "/notices", icon: Megaphone, label: "Notices" },
+    { path: "/feedback", icon: Star, label: t("feedback.title") || "Feedback" },
     { path: "/settings", icon: Settings, label: "Settings" },
   ];
 

@@ -139,6 +139,7 @@ const Login = () => {
               </button>
             </form>
             <p className="mt-6 text-center text-sm text-stone-500">{t("auth.no_account")} <Link to="/register" className="text-amber-600 hover:text-amber-700 font-semibold">{t("auth.sign_up")}</Link></p>
+            <p className="mt-2 text-center"><Link to="/forgot-password" className="text-sm text-stone-400 hover:text-amber-600 transition-colors">{t("auth.forgot_password") || "Forgot Password?"}</Link></p>
           </div>
         </div>
       </div>

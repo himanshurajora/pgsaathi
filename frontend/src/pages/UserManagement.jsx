@@ -78,7 +78,7 @@ const UserManagement = () => {
   if (user?.role !== "owner") return <div className="p-10 text-center text-stone-400">Access restricted to owners only.</div>;
 
   return (
-    <div className="space-y-5" data-testid="user-management-page">
+    <div className="space-y-6" data-testid="user-management-page">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-stone-900" style={{ fontFamily: "Manrope, sans-serif" }}>User Management</h1>
@@ -97,9 +97,9 @@ const UserManagement = () => {
           <p className="text-stone-400 text-sm">No users found</p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {users.map((u) => (
-            <div key={u.id} data-testid={`user-row-${u.id}`} className="bg-white rounded-xl border border-stone-200 p-4 flex items-center justify-between gap-3">
+            <div key={u.id} data-testid={`user-row-${u.id}`} className="bg-white rounded-xl border border-stone-200 p-5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-amber-700 font-semibold text-sm">{u.name?.[0]?.toUpperCase()}</span>

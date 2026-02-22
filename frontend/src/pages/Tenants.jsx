@@ -129,7 +129,7 @@ const Tenants = () => {
   const inp = "w-full h-10 px-3 border border-stone-200 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 rounded-lg outline-none text-sm";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-stone-900" style={{ fontFamily: "Manrope, sans-serif" }}>{t("tenant.title")}</h1>
@@ -162,8 +162,8 @@ const Tenants = () => {
           <p className="text-stone-400 text-sm">No tenants found</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          <div className="hidden md:grid grid-cols-12 gap-3 px-4 text-xs font-semibold text-stone-400 uppercase tracking-wide">
+        <div className="space-y-5 mt-4">
+          <div className="hidden md:grid grid-cols-12 gap-3 px-4 pb-2 text-xs font-semibold text-stone-400 uppercase tracking-wide">
             <div className="col-span-3">Name</div>
             <div className="col-span-2">Phone</div>
             <div className="col-span-2">Check-In</div>
@@ -172,7 +172,7 @@ const Tenants = () => {
             <div className="col-span-2">Actions</div>
           </div>
           {filtered.map((tenant) => (
-            <div key={tenant.id} data-testid={`tenant-row-${tenant.id}`} className="bg-white rounded-xl border border-stone-200 p-4 hover:border-stone-300 transition-colors">
+            <div key={tenant.id} data-testid={`tenant-row-${tenant.id}`} className="bg-white rounded-xl border border-stone-200 p-5 hover:border-stone-300 transition-colors">
               <div className="hidden md:grid grid-cols-12 gap-3 items-center">
                 <div className="col-span-3 flex items-center gap-2.5">
                   <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">

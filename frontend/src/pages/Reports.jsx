@@ -60,21 +60,21 @@ const Reports = () => {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-stone-900" style={{ fontFamily: "Manrope, sans-serif" }}>{t("reports.title")}</h1>
         <p className="text-stone-500 text-sm">Overview of your PG operations</p>
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {summaryCards.map((card) => (
-          <div key={card.label} className="bg-white rounded-xl border border-stone-200 p-4">
+          <div key={card.label} className="bg-white rounded-xl border border-stone-200 p-5">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="text-xs text-stone-500 mb-1">{card.label}</p>
                 <p className={`text-xl font-bold ${card.color}`} style={{ fontFamily: "Manrope, sans-serif" }}>{card.value}</p>
-                <p className="text-xs text-stone-400 mt-0.5">{card.sub}</p>
+                <p className="text-xs text-stone-400 mt-1">{card.sub}</p>
               </div>
               <div className={`p-2 rounded-lg ${card.bg}`}>
                 <card.icon size={16} className={card.color} strokeWidth={1.5} />
@@ -102,7 +102,7 @@ const Reports = () => {
       )}
 
       {/* Pie charts row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {kycData.length > 0 && (
           <div className="bg-white rounded-xl border border-stone-200 p-5">
             <h3 className="font-semibold text-stone-900 mb-4 text-sm" style={{ fontFamily: "Manrope, sans-serif" }}>Tenant KYC Status</h3>
@@ -137,7 +137,7 @@ const Reports = () => {
       {properties.length > 0 && (
         <div className="bg-white rounded-xl border border-stone-200 p-5">
           <h3 className="font-semibold text-stone-900 mb-4 text-sm" style={{ fontFamily: "Manrope, sans-serif" }}>Properties Summary</h3>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {properties.map((prop) => {
               const propTenants = tenants.filter((t) => t.property_id === prop.id && t.status === "active");
               const propInvoices = invoices.filter((i) => i.property_id === prop.id);

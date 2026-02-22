@@ -62,7 +62,7 @@ const NoticeBoard = () => {
   const inp = "w-full h-10 px-3 border border-stone-200 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 rounded-lg outline-none text-sm";
 
   return (
-    <div className="space-y-5" data-testid="notice-board-page">
+    <div className="space-y-6" data-testid="notice-board-page">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-stone-900" style={{ fontFamily: "Manrope, sans-serif" }}>Notice Board</h1>
@@ -85,10 +85,10 @@ const NoticeBoard = () => {
       ) : (
         <>
           {pinned.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Pinned</p>
               {pinned.map((n) => (
-                <div key={n.id} data-testid={`notice-${n.id}`} className="bg-amber-50 rounded-xl border border-amber-200 p-4">
+                <div key={n.id} data-testid={`notice-${n.id}`} className="bg-amber-50 rounded-xl border border-amber-200 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
@@ -111,10 +111,10 @@ const NoticeBoard = () => {
             </div>
           )}
           {unpinned.length > 0 && (
-            <div className="space-y-2">
-              {pinned.length > 0 && <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mt-4">Recent</p>}
+            <div className="space-y-3">
+              {pinned.length > 0 && <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide">Recent</p>}
               {unpinned.map((n) => (
-                <div key={n.id} data-testid={`notice-${n.id}`} className="bg-white rounded-xl border border-stone-200 p-4">
+                <div key={n.id} data-testid={`notice-${n.id}`} className="bg-white rounded-xl border border-stone-200 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">

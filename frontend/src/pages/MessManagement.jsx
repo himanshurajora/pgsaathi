@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../context/LanguageContext";
 import API from "../services/api";
-import { Plus, Utensils, CheckCircle2, XCircle } from "lucide-react";
+import { Plus, Utensils, CheckCircle2, XCircle, ClipboardList, Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 
@@ -17,6 +17,11 @@ const MessManagement = () => {
   const [saving, setSaving] = useState(false);
   const [configForm, setConfigForm] = useState({ property_id: "", monthly_amount: "", meal_types: ["breakfast", "lunch", "dinner"], veg_nonveg: "veg", tracking_mode: "fixed" });
   const [planForm, setPlanForm] = useState({ tenant_id: "", property_id: "", opted_meals: ["breakfast", "lunch", "dinner"], start_date: new Date().toISOString().slice(0, 10) });
+  const [activeTab, setActiveTab] = useState("config");
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().slice(0, 10));
+  const [attendanceRecords, setAttendanceRecords] = useState([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState("");
 
   const fetchAll = async () => {
     try {
@@ -34,6 +39,31 @@ const MessManagement = () => {
   };
 
   useEffect(() => { fetchAll(); }, []);
+
+  const fetchAttendance = async (date) => {
+    setAttendanceLoading(true);
+    try {
+      const res = await API.get(`/mess/attendance?date=${date}`);
+      setAttendanceRecords(res.data);
+    } catch { toast.error(t("mess.attendance_load_failed") || "Failed to load attendance"); }
+    finally { setAttendanceLoading(false); }
+  };
+
+  useEffect(() => { if (activeTab === "attendance") fetchAttendance(attendanceDate); }, [activeTab, attendanceDate]);
+
+  const handleMarkAttendance = async (tenantId, mealType, present) => {
+    try {
+      await API.post("/mess/attendance", { tenant_id: tenantId, meal_type: mealType, date: attendanceDate, present });
+      fetchAttendance(attendanceDate);
+      toast.success(present ? (t("mess.marked_present") || "Marked present") : (t("mess.marked_absent") || "Marked absent"));
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+  };
+
+  const changeDate = (days) => {
+    const d = new Date(attendanceDate);
+    d.setDate(d.getDate() + days);
+    setAttendanceDate(d.toISOString().slice(0, 10));
+  };
 
   const handleCreateConfig = async (e) => {
     e.preventDefault();
@@ -75,11 +105,26 @@ const MessManagement = () => {
   if (loading) return <div className="flex items-center justify-center h-48"><div className="w-7 h-7 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-stone-900" style={{ fontFamily: "Manrope, sans-serif" }}>{t("mess.title")}</h1>
-        <p className="text-stone-500 text-sm">{configs.length} mess configurations · {plans.length} meal plans</p>
+        <p className="text-stone-500 text-sm">{configs.length} {t("mess.config").toLowerCase()} · {plans.length} {t("mess.plans").toLowerCase()}</p>
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 bg-stone-100 p-1 rounded-lg w-fit">
+        {[
+          { key: "config", label: t("mess.config"), icon: Utensils },
+          { key: "plans", label: t("mess.plans"), icon: Users },
+          { key: "attendance", label: t("mess.attendance"), icon: ClipboardList },
+        ].map(({ key, label, icon: Icon }) => (
+          <button key={key} onClick={() => setActiveTab(key)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${activeTab === key ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-700"}`}>
+            <Icon size={13} />{label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "config" && (<>
 
       {/* Mess Configs */}
       <div>
@@ -129,6 +174,9 @@ const MessManagement = () => {
         )}
       </div>
 
+      </>)}
+
+      {activeTab === "plans" && (<>
       {/* Meal Plans */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -142,11 +190,11 @@ const MessManagement = () => {
             <p className="text-stone-400 text-sm">No meal plans created. Assign meal plans to tenants.</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {plans.map((plan) => {
               const tenant = tenants.find((t) => t.id === plan.tenant_id);
               return (
-                <div key={plan.id} className="bg-white rounded-xl border border-stone-200 p-4 flex items-center justify-between gap-3">
+                <div key={plan.id} className="bg-white rounded-xl border border-stone-200 p-5 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
                       <span className="text-amber-700 font-semibold text-xs">{tenant?.name?.[0]?.toUpperCase() || "?"}</span>
@@ -168,6 +216,81 @@ const MessManagement = () => {
           </div>
         )}
       </div>
+
+      </>)}
+
+      {activeTab === "attendance" && (
+        <div className="space-y-4">
+          {/* Date Navigation */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button onClick={() => changeDate(-1)} className="p-1.5 hover:bg-stone-100 rounded-md"><ChevronLeft size={16} /></button>
+              <input type="date" value={attendanceDate} onChange={(e) => setAttendanceDate(e.target.value)} className="h-10 px-3 border border-stone-200 focus:border-amber-600 focus:ring-1 focus:ring-amber-600 rounded-lg outline-none text-sm" />
+              <button onClick={() => changeDate(1)} className="p-1.5 hover:bg-stone-100 rounded-md"><ChevronRight size={16} /></button>
+            </div>
+            {properties.length > 1 && (
+              <select value={selectedProperty} onChange={(e) => setSelectedProperty(e.target.value)} className="h-10 px-3 border border-stone-200 rounded-lg text-sm appearance-none bg-white">
+                <option value="">{t("common.all")} {t("common.property")}</option>
+                {properties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            )}
+          </div>
+
+          {attendanceLoading ? (
+            <div className="flex items-center justify-center h-32"><div className="w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" /></div>
+          ) : (
+            <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-stone-50 border-b border-stone-200">
+                    <th className="text-left px-4 py-3 font-semibold text-stone-700 text-xs uppercase">{t("tenant.name")}</th>
+                    {["breakfast", "lunch", "dinner"].map((m) => (
+                      <th key={m} className="text-center px-3 py-3 font-semibold text-stone-700 text-xs uppercase">{mealLabels[m]}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {plans.filter(p => p.is_active && (!selectedProperty || p.property_id === selectedProperty)).map((plan) => {
+                    const tenant = tenants.find((t) => t.id === plan.tenant_id);
+                    if (!tenant) return null;
+                    return (
+                      <tr key={plan.id} className="border-b border-stone-100 hover:bg-stone-50">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center">
+                              <span className="text-amber-700 font-semibold text-[10px]">{tenant.name?.[0]?.toUpperCase()}</span>
+                            </div>
+                            <span className="font-medium text-stone-900">{tenant.name}</span>
+                          </div>
+                        </td>
+                        {["breakfast", "lunch", "dinner"].map((meal) => {
+                          const isOpted = plan.opted_meals?.includes(meal);
+                          const record = attendanceRecords.find(r => r.tenant_id === plan.tenant_id && r.meal_type === meal);
+                          const isPresent = record?.present;
+                          if (!isOpted) return <td key={meal} className="text-center px-3 py-3"><span className="text-stone-300 text-xs">—</span></td>;
+                          return (
+                            <td key={meal} className="text-center px-3 py-3">
+                              <button
+                                onClick={() => handleMarkAttendance(plan.tenant_id, meal, !isPresent)}
+                                className={`w-8 h-8 rounded-full inline-flex items-center justify-center transition-colors ${isPresent ? "bg-lime-100 text-lime-600 hover:bg-lime-200" : "bg-stone-100 text-stone-400 hover:bg-stone-200"}`}
+                              >
+                                {isPresent ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+                              </button>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                  {plans.filter(p => p.is_active && (!selectedProperty || p.property_id === selectedProperty)).length === 0 && (
+                    <tr><td colSpan={4} className="px-4 py-8 text-center text-stone-400 text-sm">{t("common.no_data")}</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add Config Dialog */}
       <Dialog open={showAddConfig} onOpenChange={setShowAddConfig}>

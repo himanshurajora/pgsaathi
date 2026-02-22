@@ -117,7 +117,7 @@ const RentManagement = () => {
   if (loading) return <div className="flex items-center justify-center h-48"><div className="w-7 h-7 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-stone-900" style={{ fontFamily: "Manrope, sans-serif" }}>{t("rent.title")}</h1>
@@ -151,9 +151,9 @@ const RentManagement = () => {
               <p className="text-stone-400 text-sm">No invoices yet. Create your first invoice.</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {filteredInvoices.map((inv) => (
-                <div key={inv.id} data-testid={`invoice-row-${inv.id}`} className="bg-white rounded-xl border border-stone-200 p-4 hover:border-stone-300 transition-colors">
+                <div key={inv.id} data-testid={`invoice-row-${inv.id}`} className="bg-white rounded-xl border border-stone-200 p-5 hover:border-stone-300 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -194,11 +194,11 @@ const RentManagement = () => {
               <p className="text-stone-400 text-sm">No payments recorded yet.</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {payments.map((pay) => {
                 const tenant = tenants.find((t) => t.id === pay.tenant_id);
                 return (
-                  <div key={pay.id} className="bg-white rounded-xl border border-stone-200 p-4 flex items-center justify-between gap-3">
+                  <div key={pay.id} className="bg-white rounded-xl border border-stone-200 p-5 flex items-center justify-between gap-3">
                     <div>
                       <p className="font-medium text-stone-900 text-sm">{tenant?.name || "Unknown"}</p>
                       <p className="text-xs text-stone-400">{pay.receipt_number} · {pay.payment_date} · <span className="capitalize">{pay.payment_mode}</span></p>
