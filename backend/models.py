@@ -23,6 +23,7 @@ class PropertyCreate(BaseModel):
     gender_type: Literal["boys", "girls", "co-living"]
     house_rules: Optional[str] = ""
     contact_phone: Optional[str] = ""
+    allows_visitors: Optional[bool] = True
 
 
 class PropertyUpdate(BaseModel):
@@ -34,6 +35,7 @@ class PropertyUpdate(BaseModel):
     house_rules: Optional[str] = None
     contact_phone: Optional[str] = None
     is_active: Optional[bool] = None
+    allows_visitors: Optional[bool] = None
 
 
 class FloorCreate(BaseModel):
