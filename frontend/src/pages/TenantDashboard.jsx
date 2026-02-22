@@ -406,6 +406,45 @@ const TenantDashboard = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Visitor Request Dialog */}
+      <Dialog open={showVisitor} onOpenChange={setShowVisitor}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle style={{ fontFamily: "Manrope, sans-serif" }}>Request Visitor</DialogTitle></DialogHeader>
+          <form onSubmit={handleVisitorRequest} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-stone-600 mb-1">Visitor Name *</label>
+                <input required value={visitorForm.visitor_name} onChange={(e) => setVisitorForm({ ...visitorForm, visitor_name: e.target.value })} className={inp} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-600 mb-1">Phone</label>
+                <input value={visitorForm.visitor_phone} onChange={(e) => setVisitorForm({ ...visitorForm, visitor_phone: e.target.value })} className={inp} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-600 mb-1">Relation</label>
+                <input value={visitorForm.relation} onChange={(e) => setVisitorForm({ ...visitorForm, relation: e.target.value })} className={inp} placeholder="Friend, Parent..." />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-600 mb-1">Purpose</label>
+                <input value={visitorForm.purpose} onChange={(e) => setVisitorForm({ ...visitorForm, purpose: e.target.value })} className={inp} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-600 mb-1">Date *</label>
+                <input type="date" required value={visitorForm.visit_date} onChange={(e) => setVisitorForm({ ...visitorForm, visit_date: e.target.value })} className={inp} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-stone-600 mb-1">Time</label>
+                <input type="time" value={visitorForm.visit_time} onChange={(e) => setVisitorForm({ ...visitorForm, visit_time: e.target.value })} className={inp} />
+              </div>
+            </div>
+            <div className="flex gap-2.5">
+              <button type="button" onClick={() => setShowVisitor(false)} className="flex-1 h-10 border border-stone-200 text-stone-600 rounded-lg text-sm">Cancel</button>
+              <button type="submit" disabled={saving} className="flex-1 h-10 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 disabled:opacity-60">{saving ? "Submitting..." : "Submit"}</button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
