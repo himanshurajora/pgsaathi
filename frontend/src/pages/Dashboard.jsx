@@ -75,7 +75,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mt-2">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-2">
         <StatCard icon={Building2} label={t("dash.total_properties")} value={stats?.total_properties || 0} sub="Active" colorClass="text-amber-600" bgClass="bg-amber-50" />
         <StatCard icon={Users} label={t("dash.total_tenants")} value={stats?.total_tenants || 0} sub={`${stats?.occupancy_rate || 0}% occupancy`} colorClass="text-lime-700" bgClass="bg-lime-50" />
         <StatCard
@@ -98,7 +98,7 @@ const Dashboard = () => {
 
       {noProperties ? (
         /* Empty state */
-        <div className="bg-white rounded-xl border border-stone-200 p-12 text-center">
+        <div className="mt-2 bg-white rounded-xl border border-stone-200 p-12 text-center">
           <img
             src="https://images.pexels.com/photos/5137982/pexels-photo-5137982.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=300&w=400"
             alt="Add property"
@@ -112,7 +112,7 @@ const Dashboard = () => {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 mt-2">
           {/* Occupancy progress */}
           <div className="bg-white rounded-xl border border-stone-200 p-5">
             <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide mb-3">Bed Occupancy</p>
