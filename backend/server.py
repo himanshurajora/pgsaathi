@@ -466,6 +466,7 @@ api_router.include_router(notices_router, prefix="/notices", tags=["notices"])
 api_router.include_router(housekeeping_router, prefix="/housekeeping", tags=["housekeeping"])
 api_router.include_router(users_router, prefix="/users", tags=["users"])
 api_router.include_router(tenant_portal_router, prefix="/tenant-portal", tags=["tenant-portal"])
+api_router.include_router(visitors_router, prefix="/visitors", tags=["visitors"])
 
 app.include_router(api_router)
 
