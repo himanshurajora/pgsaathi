@@ -26,6 +26,7 @@ import Feedback from "./pages/Feedback";
 import SupportAndFeedback from "./pages/SupportAndFeedback";
 import SuperAdmin from "./pages/SuperAdmin";
 import ForgotPassword from "./pages/ForgotPassword";
+import HomePage from "./pages/HomePage";
 import "./App.css";
 
 const LoadingScreen = () => (
@@ -68,15 +69,27 @@ const RoleRedirect = () => {
   return <Navigate to="/dashboard" replace />;
 };
 
+const HomeRedirect = () => {
+  const { user, loading } = useAuth();
+  if (loading) return <LoadingScreen />;
+  if (user) {
+    if (user.role === "tenant") return <Navigate to="/tenant" replace />;
+    if (user.role === "superadmin") return <Navigate to="/super-admin" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <HomePage />;
+};
+
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<HomeRedirect />} />
+      <Route path="/home" element={<HomePage />} />
       <Route path="/select-language" element={<LanguageSelector />} />
       <Route path="/login" element={<LanguageGuard><PublicGuard><Login /></PublicGuard></LanguageGuard>} />
       <Route path="/register" element={<LanguageGuard><PublicGuard><Register /></PublicGuard></LanguageGuard>} />
       <Route path="/forgot-password" element={<LanguageGuard><PublicGuard><ForgotPassword /></PublicGuard></LanguageGuard>} />
       <Route path="/" element={<LanguageGuard><AuthGuard><Layout /></AuthGuard></LanguageGuard>}>
-        <Route index element={<RoleRedirect />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="properties" element={<Properties />} />
         <Route path="properties/:id" element={<PropertyDetail />} />

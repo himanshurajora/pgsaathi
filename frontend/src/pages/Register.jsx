@@ -228,6 +228,10 @@ const Register = () => {
             <Link to="/login" className="text-amber-600 hover:text-amber-700 font-semibold">{t("auth.sign_in")}</Link>
           </p>
         </div>
+        <div className="mt-6 text-center">
+          <p className="text-xs text-stone-400">Need help? Reach out to us at</p>
+          <a href="mailto:contact@pgsaathi.online" className="text-sm text-amber-600 hover:text-amber-700 font-semibold transition-colors">contact@pgsaathi.online</a>
+        </div>
       </div>
     </div>
   );
